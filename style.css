@@ -1,0 +1,230 @@
+:root {
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --accent: #00f3ff;
+    --hp: #ff4d4d;
+    --energy: #4d94ff;
+    --text: #ffffff;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Orbitron', sans-serif;
+    user-select: none;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #050505;
+}
+
+#game-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+/* Crosshair */
+#crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    border: 2px solid white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0.7;
+}
+
+/* HUD Overlay */
+#hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    z-index: 5;
+}
+
+/* Stats Bar */
+#stats {
+    width: 250px;
+}
+
+.stat-bar {
+    margin-bottom: 10px;
+}
+
+.stat-bar .label {
+    font-size: 10px;
+    color: var(--accent);
+    margin-bottom: 4px;
+    letter-spacing: 2px;
+}
+
+.bar-bg {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(5px);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.fill.red { background: var(--hp); box-shadow: 0 0 10px var(--hp); }
+.fill.blue { background: var(--energy); box-shadow: 0 0 10px var(--energy); }
+
+/* Inventory Bar */
+#inventory-bar {
+    align-self: center;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    padding: 10px;
+    border-radius: 12px;
+    display: flex;
+    gap: 10px;
+    pointer-events: auto;
+    margin-bottom: 20px;
+}
+
+.slot {
+    width: 45px;
+    height: 45px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    font-size: 14px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.slot:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.slot.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 15px var(--accent);
+    background: rgba(0, 243, 255, 0.1);
+}
+
+/* AI Helper Bot */
+#ai-helper {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    min-height: 80px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(15px);
+    border-radius: 16px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: var(--text);
+    animation: floating 3s ease-in-out infinite;
+}
+
+.helper-avatar {
+    font-size: 32px;
+}
+
+.helper-msg {
+    font-size: 13px;
+    font-family: 'Roboto Mono', monospace;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Overlays */
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+}
+
+.modal {
+    text-align: center;
+    padding: 40px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    max-width: 500px;
+}
+
+.modal h1 {
+    font-size: 32px;
+    margin-bottom: 20px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-shadow: 0 0 20px var(--accent);
+}
+
+.modal p {
+    margin-bottom: 30px;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.6;
+}
+
+button {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 15px 40px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+}
+
+button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px var(--accent);
+}
+
+.controls-hint {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    font-family: 'Roboto Mono', monospace;
+}
+
+@keyframes floating {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
