@@ -1,4 +1,4 @@
-# Mine Bild Defeat
+# Mine Build Defeat
 
 A Minecraft-inspired survival and building game built with **Three.js**.
 
