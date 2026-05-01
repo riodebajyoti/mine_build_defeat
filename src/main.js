@@ -73,10 +73,10 @@ let direction = new THREE.Vector3();
 
 const onKeyDown = (event) => {
     switch (event.code) {
-        case 'KeyW': moveForward = true; break;
-        case 'KeyS': moveBackward = true; break;
-        case 'KeyA': moveLeft = true; break;
-        case 'KeyD': moveRight = true; break;
+        case 'ArrowUp': moveForward = true; break;
+        case 'ArrowDown': moveBackward = true; break;
+        case 'ArrowLeft': moveLeft = true; break;
+        case 'ArrowRight': moveRight = true; break;
         case 'Space': if (canJump === true) velocity.y += JUMP_FORCE; canJump = false; break;
         case 'Digit1': state.setSelected(0); break;
         case 'Digit2': state.setSelected(1); break;
@@ -89,10 +89,10 @@ const onKeyDown = (event) => {
 
 const onKeyUp = (event) => {
     switch (event.code) {
-        case 'KeyW': moveForward = false; break;
-        case 'KeyS': moveBackward = false; break;
-        case 'KeyA': moveLeft = false; break;
-        case 'KeyD': moveRight = false; break;
+        case 'ArrowUp': moveForward = false; break;
+        case 'ArrowDown': moveBackward = false; break;
+        case 'ArrowLeft': moveLeft = false; break;
+        case 'ArrowRight': moveRight = false; break;
     }
 };
 
