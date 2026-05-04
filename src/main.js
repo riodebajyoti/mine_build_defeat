@@ -58,8 +58,43 @@ controls.addEventListener('lock', () => {
 });
 
 controls.addEventListener('unlock', () => {
-    overlay.style.display = 'flex';
     state.isPointerLocked = false;
+    if (!isAccessoriesMenuOpen) {
+        overlay.style.display = 'flex';
+    }
+});
+
+// --- ACCESSORIES MENU ---
+const accessoriesMenu = document.getElementById('accessories-menu');
+const closeAccessoriesBtn = document.getElementById('close-accessories-btn');
+const accessorySearch = document.getElementById('accessory-search');
+const accessoryGetBtn = document.getElementById('accessory-get-btn');
+
+let isAccessoriesMenuOpen = false;
+
+function toggleAccessoriesMenu() {
+    isAccessoriesMenuOpen = !isAccessoriesMenuOpen;
+    if (isAccessoriesMenuOpen) {
+        controls.unlock();
+        overlay.style.display = 'none'; // Ensure start menu is hidden
+        accessoriesMenu.style.display = 'flex';
+        accessorySearch.focus();
+    } else {
+        accessoriesMenu.style.display = 'none';
+        controls.lock();
+    }
+}
+
+closeAccessoriesBtn.addEventListener('click', () => {
+    if (isAccessoriesMenuOpen) toggleAccessoriesMenu();
+});
+
+accessoryGetBtn.addEventListener('click', () => {
+    const val = accessorySearch.value.trim();
+    if (val) {
+        state.addResource(val, 1);
+        accessorySearch.value = '';
+    }
 });
 
 // --- MOVEMENT STATE ---
@@ -72,7 +107,13 @@ let velocity = new THREE.Vector3();
 let direction = new THREE.Vector3();
 
 const onKeyDown = (event) => {
+    if (document.activeElement === accessorySearch) {
+        if (event.code === 'Enter') accessoryGetBtn.click();
+        return;
+    }
+
     switch (event.code) {
+        case 'KeyW': toggleAccessoriesMenu(); break;
         case 'ArrowUp': moveForward = true; break;
         case 'ArrowDown': moveBackward = true; break;
         case 'ArrowLeft': moveLeft = true; break;

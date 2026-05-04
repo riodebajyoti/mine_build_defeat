@@ -18,6 +18,21 @@ export const state = {
     notify() {
         this.listeners.forEach(cb => cb(this));
         this.updateHUD();
+        this.updateAccessoriesUI();
+    },
+
+    updateAccessoriesUI() {
+        const list = document.getElementById('accessories-list');
+        if (!list) return;
+        list.innerHTML = '';
+        this.inventory.forEach(item => {
+            if (item.count > 0 || item.id <= 5) { // Show all items that have >0 count or are base items
+                const el = document.createElement('div');
+                el.className = 'accessory-item';
+                el.innerHTML = `<span>${item.name}</span> <span>x${item.count}</span>`;
+                list.appendChild(el);
+            }
+        });
     },
 
     updateHUD() {
@@ -37,12 +52,17 @@ export const state = {
     },
 
     addResource(name, count = 1) {
-        const item = this.inventory.find(i => i.name === name);
+        let item = this.inventory.find(i => i.name.toLowerCase() === name.toLowerCase());
         if (item) {
             item.count += count;
-            this.notify();
-            this.showHelperMsg(`Collected ${count}x ${name}!`);
+        } else {
+            // Add as a new item
+            const newId = this.inventory.length > 0 ? Math.max(...this.inventory.map(i => i.id)) + 1 : 1;
+            item = { id: newId, name: name, count: count, active: false };
+            this.inventory.push(item);
         }
+        this.notify();
+        this.showHelperMsg(`Collected ${count}x ${item.name}!`);
     },
 
     setHP(val) {
