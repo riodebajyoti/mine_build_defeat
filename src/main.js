@@ -158,6 +158,21 @@ document.addEventListener('mousedown', (event) => {
         }
     }
 
+    const currentItem = state.inventory[state.selectedSlot];
+    const baseBlocks = ['Dirt', 'Stone', 'Wood', 'Steel', 'Cores', 'Grass'];
+    const isAccessory = currentItem && !baseBlocks.includes(currentItem.name);
+
+    // Use accessory without needing a block
+    if (isAccessory) {
+        if (event.button === 2) {
+            state.showHelperMsg(`Used the ${currentItem.name}!`);
+            return;
+        } else if (event.button === 0) {
+            state.showHelperMsg(`Swung the ${currentItem.name}!`);
+            return;
+        }
+    }
+
     const intersects = raycaster.intersectObjects(world.getSurfaceObjects());
 
     if (intersects.length > 0) {
