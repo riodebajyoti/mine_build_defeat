@@ -29,10 +29,28 @@ export const state = {
             if (item.count > 0 || item.id <= 5) { // Show all items that have >0 count or are base items
                 const el = document.createElement('div');
                 el.className = 'accessory-item';
+                el.style.cursor = 'pointer';
+                el.title = 'Click to equip in current slot';
                 el.innerHTML = `<span>${item.name}</span> <span>x${item.count}</span>`;
+                el.onclick = () => this.equipItem(item);
                 list.appendChild(el);
             }
         });
+    },
+
+    equipItem(item) {
+        const activeItemIndex = this.selectedSlot;
+        const clickedItemIndex = this.inventory.findIndex(i => i === item);
+        
+        if (clickedItemIndex !== -1 && clickedItemIndex !== activeItemIndex) {
+            // Swap items in the inventory so the clicked item is in the active quick-slot
+            const temp = this.inventory[activeItemIndex];
+            this.inventory[activeItemIndex] = this.inventory[clickedItemIndex];
+            this.inventory[clickedItemIndex] = temp;
+            
+            this.notify();
+            this.showHelperMsg(`Equipped ${item.name} to slot ${activeItemIndex + 1}!`);
+        }
     },
 
     updateHUD() {
@@ -47,7 +65,11 @@ export const state = {
             else slot.classList.remove('active');
 
             const item = this.inventory[i];
-            slot.textContent = item.count > 0 ? `${item.count}` : '';
+            if (item) {
+                let shortName = item.name.length > 3 ? item.name.substring(0,3).toUpperCase() : item.name.toUpperCase();
+                slot.innerHTML = `<span style="font-size: 9px; color: var(--accent);">${shortName}</span><br><b>${item.count}</b>`;
+                slot.title = item.name;
+            }
         });
     },
 
