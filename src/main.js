@@ -57,7 +57,18 @@ function updateHandModel() {
         if (!baseBlocks.includes(type)) {
             currentHandMesh.rotation.x = Math.PI / 2;
             currentHandMesh.position.set(0, 0, -0.2);
+        } else {
+            // Isometric rotation for held blocks like Minecraft
+            currentHandMesh.rotation.set(-0.2, -Math.PI / 4, 0.1);
         }
+        handGroup.add(currentHandMesh);
+    } else {
+        // Render Bare Minecraft Arm
+        const geometry = new THREE.BoxGeometry(0.15, 0.5, 0.15);
+        const material = new THREE.MeshStandardMaterial({ color: 0xd2b48c, roughness: 0.6 }); // Tan skin color
+        currentHandMesh = new THREE.Mesh(geometry, material);
+        currentHandMesh.position.set(0, -0.1, 0);
+        currentHandMesh.rotation.set(-0.4, -0.2, -0.1);
         handGroup.add(currentHandMesh);
     }
 }
@@ -299,24 +310,34 @@ function animate() {
         }
 
         // Hand Animations
-        const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
-        if (speed > 0.1 && canJump) {
-            bobTime += delta * 12;
-            handGroup.position.y = -0.4 + Math.sin(bobTime) * 0.05;
-            handGroup.position.x = 0.5 + Math.cos(bobTime * 0.5) * 0.02;
-        } else {
-            handGroup.position.y = THREE.MathUtils.lerp(handGroup.position.y, -0.4, delta * 5);
-            handGroup.position.x = THREE.MathUtils.lerp(handGroup.position.x, 0.5, delta * 5);
-        }
-
         if (isSwinging) {
-            swingTime += delta * 15;
+            swingTime += delta * 20; // Minecraft swings are fast
             if (swingTime > Math.PI) {
                 isSwinging = false;
-                handGroup.rotation.x = 0;
+                handGroup.rotation.set(0, 0, 0);
+                handGroup.position.set(0.5, -0.4, -0.8);
             } else {
-                handGroup.rotation.x = -Math.sin(swingTime) * 0.8;
+                // Minecraft swing: strikes down, inwards, and rotates forward
+                const progress = Math.sin(swingTime);
+                handGroup.rotation.x = -progress * 1.2;
+                handGroup.rotation.y = progress * 0.5;
+                handGroup.rotation.z = progress * 0.4;
+                handGroup.position.y = -0.4 - progress * 0.3;
+                handGroup.position.z = -0.8 - progress * 0.2;
+                handGroup.position.x = 0.5 - progress * 0.2;
             }
+        } else {
+            const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
+            if (speed > 0.1 && canJump) {
+                bobTime += delta * 12;
+                handGroup.position.y = -0.4 + Math.sin(bobTime) * 0.05;
+                handGroup.position.x = 0.5 + Math.cos(bobTime * 0.5) * 0.02;
+            } else {
+                handGroup.position.y = THREE.MathUtils.lerp(handGroup.position.y, -0.4, delta * 10);
+                handGroup.position.x = THREE.MathUtils.lerp(handGroup.position.x, 0.5, delta * 10);
+            }
+            handGroup.position.z = -0.8;
+            handGroup.rotation.set(0, 0, 0);
         }
 
         // Robot Follow Logic
