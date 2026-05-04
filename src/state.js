@@ -42,14 +42,20 @@ export const state = {
         const activeItemIndex = this.selectedSlot;
         const clickedItemIndex = this.inventory.findIndex(i => i === item);
         
-        if (clickedItemIndex !== -1 && clickedItemIndex !== activeItemIndex) {
-            // Swap items in the inventory so the clicked item is in the active quick-slot
-            const temp = this.inventory[activeItemIndex];
-            this.inventory[activeItemIndex] = this.inventory[clickedItemIndex];
-            this.inventory[clickedItemIndex] = temp;
+        if (clickedItemIndex !== -1) {
+            if (clickedItemIndex !== activeItemIndex) {
+                // Swap items in the inventory so the clicked item is in the active quick-slot
+                const temp = this.inventory[activeItemIndex];
+                this.inventory[activeItemIndex] = this.inventory[clickedItemIndex];
+                this.inventory[clickedItemIndex] = temp;
+                
+                this.notify();
+                this.showHelperMsg(`Equipped ${item.name} to slot ${activeItemIndex + 1}!`);
+            }
             
-            this.notify();
-            this.showHelperMsg(`Equipped ${item.name} to slot ${activeItemIndex + 1}!`);
+            // Close the menu automatically
+            const closeBtn = document.getElementById('close-accessories-btn');
+            if (closeBtn) closeBtn.click();
         }
     },
 

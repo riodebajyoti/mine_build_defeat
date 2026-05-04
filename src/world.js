@@ -57,9 +57,18 @@ export class VoxelWorld {
             typeCounts[type] = (typeCounts[type] || 0) + 1;
         });
 
-        Object.keys(this.materials).forEach(type => {
+        Object.keys(typeCounts).forEach(type => {
             const count = typeCounts[type] || 0;
             if (count === 0) return;
+
+            // Dynamically generate a material if it doesn't exist
+            if (!this.materials[type]) {
+                // Generate a random color based on the string hash
+                let hash = 0;
+                for (let i = 0; i < type.length; i++) hash = type.charCodeAt(i) + ((hash << 5) - hash);
+                const color = new THREE.Color(`hsl(${Math.abs(hash) % 360}, 80%, 50%)`);
+                this.materials[type] = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3, metalness: 0.2 });
+            }
 
             const mesh = new THREE.InstancedMesh(this.geometry, this.materials[type], count);
             mesh.castShadow = true;
