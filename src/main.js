@@ -146,7 +146,6 @@ controls.addEventListener('unlock', () => {
 const accessoriesMenu = document.getElementById('accessories-menu');
 const closeAccessoriesBtn = document.getElementById('close-accessories-btn');
 const accessorySearch = document.getElementById('accessory-search');
-const accessoryGetBtn = document.getElementById('accessory-get-btn');
 
 let isAccessoriesMenuOpen = false;
 
@@ -168,11 +167,32 @@ closeAccessoriesBtn.addEventListener('click', () => {
     if (isAccessoriesMenuOpen) toggleAccessoriesMenu();
 });
 
-accessoryGetBtn.addEventListener('click', () => {
-    const val = accessorySearch.value.trim();
-    if (val) {
-        state.addResource(val, 1);
-        accessorySearch.value = '';
+// Search filters real Minecraft items only
+accessorySearch.addEventListener('input', () => {
+    const query = accessorySearch.value.trim().toLowerCase();
+    if (query.length === 0) {
+        buildCatalog(currentCatalogFilter);
+    } else {
+        const grid = document.getElementById('catalog-grid');
+        const titleEl = document.getElementById('mc-tab-title');
+        if (titleEl) titleEl.textContent = `Search: "${accessorySearch.value.trim()}"`;
+        grid.innerHTML = '';
+        const results = MINECRAFT_ITEMS.filter(i => i.name.toLowerCase().includes(query));
+        if (results.length === 0) {
+            grid.innerHTML = `<div style="color:#fff;font-family:'Press Start 2P',monospace;font-size:7px;padding:10px;grid-column:1/-1;">NOT FOUND IN MINECRAFT</div>`;
+        } else {
+            results.forEach(item => {
+                const emoji = ITEM_EMOJI_MAP[item.name] || '📦';
+                const card = document.createElement('div');
+                card.className = 'catalog-item';
+                card.setAttribute('data-name', item.name);
+                card.innerHTML = `<span class="item-emoji">${emoji}</span>`;
+                card.onclick = () => state.addResource(item.name, 1);
+                grid.appendChild(card);
+            });
+        }
+        // reset tab active state
+        document.querySelectorAll('.mc-tab').forEach(b => b.classList.remove('active'));
     }
 });
 
