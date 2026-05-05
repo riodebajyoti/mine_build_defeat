@@ -35,7 +35,7 @@ function updateHandModel() {
     if (currentItem && currentItem.count > 0) {
         const type = currentItem.name;
         let geometry, material;
-        
+
         const baseBlocks = ['Dirt', 'Stone', 'Wood', 'Steel', 'Cores', 'Grass'];
         if (baseBlocks.includes(type)) {
             geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3);
@@ -52,7 +52,7 @@ function updateHandModel() {
             const color = new THREE.Color(`hsl(${Math.abs(hash) % 360}, 80%, 50%)`);
             material = new THREE.MeshStandardMaterial({ color: color, roughness: 0.2, metalness: 0.8, emissive: color, emissiveIntensity: 0.2 });
         }
-        
+
         currentHandMesh = new THREE.Mesh(geometry, material);
         if (!baseBlocks.includes(type)) {
             currentHandMesh.rotation.x = Math.PI / 2;
@@ -224,9 +224,12 @@ const mouse = new THREE.Vector2(0, 0); // Center
 
 document.addEventListener('mousedown', (event) => {
     if (!state.isPointerLocked) return;
-    
-    isSwinging = true;
-    swingTime = 0;
+
+    // Only trigger swing on right-click
+    if (event.button === 2) {
+        isSwinging = true;
+        swingTime = 0;
+    }
 
     raycaster.setFromCamera(mouse, camera);
 
@@ -255,7 +258,16 @@ document.addEventListener('mousedown', (event) => {
 
     if (intersects.length > 0) {
         const intersection = intersects[0];
-        if (event.button === 2 && !isAccessory) { // RIGHT CLICK: BUILD (if holding block)
+        if (event.button === 0) { // LEFT CLICK: ALWAYS MINE/DIG
+            world.mineBlock(intersection.object, intersection.point);
+
+            // Spawn Boss after mining 5 blocks
+            const dirtCount = state.inventory.find(i => i.name === 'Dirt')?.count || 0;
+            if (dirtCount >= 5 && !bossSpawned) {
+                boss.activate();
+                bossSpawned = true;
+            }
+        } else if (event.button === 2 && !isAccessory) { // RIGHT CLICK: BUILD (if holding block)
             world.placeBlock(intersection.point, intersection.face.normal);
         }
     }
@@ -332,14 +344,14 @@ function animate() {
         const targetPos = camera.position.clone();
         const cameraDirection = new THREE.Vector3();
         camera.getWorldDirection(cameraDirection);
-        
+
         const right = new THREE.Vector3().crossVectors(cameraDirection, camera.up).normalize();
         targetPos.addScaledVector(cameraDirection, -1.5);
         targetPos.addScaledVector(right, 1.2);
         targetPos.y += Math.sin(time * 0.002) * 0.2;
-        
+
         robotGroup.position.lerp(targetPos, delta * 3);
-        
+
         const lookTarget = camera.position.clone().addScaledVector(cameraDirection, 10);
         robotGroup.lookAt(lookTarget);
 
