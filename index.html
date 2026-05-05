@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Press+Start+2P&display=swap"
         rel="stylesheet">
     <script type="importmap">
         {
@@ -69,34 +69,36 @@
         </div>
 
         <div id="accessories-menu" style="display: none;">
-            <div class="modal large-modal">
-                <button class="close-btn" id="close-accessories-btn">✕</button>
-                <h2>⚔️ ACCESSORIES & ITEMS</h2>
+            <div class="mc-inventory">
 
-                <div class="accessories-content">
-                    <!-- Left: Your inventory -->
-                    <div class="inventory-section">
-                        <h3>🎒 Your Items</h3>
-                        <div id="accessories-list"></div>
-                        <div class="search-bar-container" style="margin-top:12px;">
-                            <input type="text" id="accessory-search" placeholder="Custom item name...">
-                            <button id="accessory-get-btn">GET</button>
-                        </div>
-                    </div>
-
-                    <!-- Right: Minecraft catalog -->
-                    <div class="catalog-section">
-                        <div class="catalog-filter">
-                            <button class="filter-btn active" data-cat="all">All</button>
-                            <button class="filter-btn" data-cat="weapons">⚔️ Weapons</button>
-                            <button class="filter-btn" data-cat="tools">⛏️ Tools</button>
-                            <button class="filter-btn" data-cat="armor">🛡️ Armor</button>
-                            <button class="filter-btn" data-cat="potions">🧪 Potions</button>
-                            <button class="filter-btn" data-cat="special">✨ Special</button>
-                        </div>
-                        <div id="catalog-grid"></div>
-                    </div>
+                <!-- Tabs -->
+                <div class="mc-tabs">
+                    <button class="mc-tab active" data-cat="all">🗂️</button>
+                    <button class="mc-tab" data-cat="weapons">⚔️</button>
+                    <button class="mc-tab" data-cat="tools">⛏️</button>
+                    <button class="mc-tab" data-cat="armor">🛡️</button>
+                    <button class="mc-tab" data-cat="potions">🧪</button>
+                    <button class="mc-tab" data-cat="special">✨</button>
+                    <button class="mc-tab" data-cat="yours">🎒</button>
+                    <button class="mc-close" id="close-accessories-btn">✕</button>
                 </div>
+
+                <!-- Title bar -->
+                <div class="mc-title" id="mc-tab-title">All Items</div>
+
+                <!-- Item Grid -->
+                <div class="mc-grid" id="catalog-grid"></div>
+
+                <!-- Search bar -->
+                <div class="mc-search-row">
+                    <div class="mc-search-label">🔍 SEARCH</div>
+                    <input class="mc-search-input" type="text" id="accessory-search" placeholder="Type item name...">
+                    <button class="mc-get-btn" id="accessory-get-btn">GET</button>
+                </div>
+
+                <!-- Your hotbar -->
+                <div class="mc-hotbar-label">HOTBAR</div>
+                <div id="accessories-list" class="mc-your-items"></div>
             </div>
         </div>
     </div>

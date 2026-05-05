@@ -25,13 +25,32 @@ export const state = {
         const list = document.getElementById('accessories-list');
         if (!list) return;
         list.innerHTML = '';
+        const EMOJI_MAP = {
+            'Dirt':'🟫','Stone':'⬜','Wood':'🪵','Steel':'⚙️','Cores':'🔵','Grass':'🟩',
+            'Wood Sword':'🗡️','Stone Sword':'⚔️','Iron Sword':'🔪','Diamond Sword':'💎',
+            'Gold Sword':'✨','Netherite Sword':'🔥','Bow':'🏹','Crossbow':'🎯',
+            'Trident':'🔱','Shield':'🛡️','Arrow':'➡️','Wood Pickaxe':'⛏️',
+            'Stone Pickaxe':'⛏️','Iron Pickaxe':'⚒️','Diamond Pickaxe':'💎',
+            'Netherite Pickaxe':'🔥','Wood Axe':'🪓','Iron Axe':'🪓','Diamond Axe':'💎',
+            'Shovel':'🪣','Hoe':'🌾','Fishing Rod':'🎣','Shears':'✂️',
+            'Flint & Steel':'🔥','Compass':'🧭','Clock':'🕐','Spyglass':'🔭',
+            'Leather Helmet':'🪖','Iron Helmet':'⛑️','Diamond Helmet':'💎',
+            'Netherite Helmet':'🔥','Iron Chestplate':'🦺','Diamond Chestplate':'💎',
+            'Elytra':'🦋','Iron Leggings':'👖','Diamond Boots':'👢','Gold Armor':'👑',
+            'Health Potion':'❤️','Speed Potion':'💨','Strength Potion':'💪',
+            'Fire Resist Potion':'🔥','Night Vision Potion':'👁️','Invisibility Potion':'👻',
+            'Poison Potion':'☠️','Splash Potion':'💦','Exp Bottle':'🟢',
+            'Ender Pearl':'🟣','Eye of Ender':'👁️','Totem of Undying':'🗿',
+            'Enchanted Book':'📖','Lead':'🪢','Name Tag':'🏷️','Firework':'🎆',
+            'Map':'🗺️','Music Disc':'💿','TNT':'💥','Beacon':'🔆','Nether Star':'⭐',
+        };
         this.inventory.forEach(item => {
-            if (item.count > 0 || item.id <= 5) { // Show all items that have >0 count or are base items
+            if (item.count > 0 || item.id <= 5) {
+                const emoji = EMOJI_MAP[item.name] || '📦';
                 const el = document.createElement('div');
                 el.className = 'accessory-item';
-                el.style.cursor = 'pointer';
-                el.title = 'Click to equip in current slot';
-                el.innerHTML = `<span>${item.name}</span> <span>x${item.count}</span>`;
+                el.title = item.name;
+                el.innerHTML = `${emoji}<span class="item-count">${item.count > 0 ? item.count : ''}</span>`;
                 el.onclick = () => this.equipItem(item);
                 list.appendChild(el);
             }

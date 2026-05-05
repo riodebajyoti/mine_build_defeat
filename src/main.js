@@ -154,8 +154,9 @@ function toggleAccessoriesMenu() {
     isAccessoriesMenuOpen = !isAccessoriesMenuOpen;
     if (isAccessoriesMenuOpen) {
         controls.unlock();
-        overlay.style.display = 'none'; // Ensure start menu is hidden
+        overlay.style.display = 'none';
         accessoriesMenu.style.display = 'flex';
+        buildCatalog(currentCatalogFilter);
         accessorySearch.focus();
     } else {
         accessoriesMenu.style.display = 'none';
@@ -176,101 +177,112 @@ accessoryGetBtn.addEventListener('click', () => {
 });
 
 // --- MINECRAFT ITEM CATALOG ---
+const TAB_TITLES = {
+    all: 'All Items',
+    weapons: 'Weapons & Combat',
+    tools: 'Tools & Utilities',
+    armor: 'Armor & Wearables',
+    potions: 'Potions & Brews',
+    special: 'Special Items',
+    yours: 'Your Inventory'
+};
+
+const ITEM_EMOJI_MAP = {
+    'Wood Sword': '🗡️', 'Stone Sword': '⚔️', 'Iron Sword': '🔪', 'Diamond Sword': '💎',
+    'Gold Sword': '✨', 'Netherite Sword': '🔥', 'Bow': '🏹', 'Crossbow': '🎯',
+    'Trident': '🔱', 'Shield': '🛡️', 'Arrow': '➡️',
+    'Wood Pickaxe': '⛏️', 'Stone Pickaxe': '⛏️', 'Iron Pickaxe': '⚒️',
+    'Diamond Pickaxe': '💎', 'Netherite Pickaxe': '🔥', 'Wood Axe': '🪓',
+    'Iron Axe': '🪓', 'Diamond Axe': '💎', 'Shovel': '🪣', 'Hoe': '🌾',
+    'Fishing Rod': '🎣', 'Shears': '✂️', 'Flint & Steel': '🔥',
+    'Compass': '🧭', 'Clock': '🕐', 'Spyglass': '🔭',
+    'Leather Helmet': '🪖', 'Iron Helmet': '⛑️', 'Diamond Helmet': '💎',
+    'Netherite Helmet': '🔥', 'Iron Chestplate': '🦺', 'Diamond Chestplate': '💎',
+    'Elytra': '🦋', 'Iron Leggings': '👖', 'Diamond Boots': '👢', 'Gold Armor': '👑',
+    'Health Potion': '❤️', 'Speed Potion': '💨', 'Strength Potion': '💪',
+    'Fire Resist Potion': '🔥', 'Night Vision Potion': '👁️', 'Invisibility Potion': '👻',
+    'Poison Potion': '☠️', 'Splash Potion': '💦', 'Exp Bottle': '🟢',
+    'Ender Pearl': '🟣', 'Eye of Ender': '👁️', 'Totem of Undying': '🗿',
+    'Enchanted Book': '📖', 'Lead': '🪢', 'Name Tag': '🏷️', 'Firework': '🎆',
+    'Map': '🗺️', 'Music Disc': '💿', 'TNT': '💥', 'Beacon': '🔆', 'Nether Star': '⭐',
+};
+
 const MINECRAFT_ITEMS = [
-    // Weapons
-    { name: 'Wood Sword',      emoji: '🗡️',  cat: 'weapons' },
-    { name: 'Stone Sword',     emoji: '⚔️',  cat: 'weapons' },
-    { name: 'Iron Sword',      emoji: '🔪',  cat: 'weapons' },
-    { name: 'Diamond Sword',   emoji: '💎',  cat: 'weapons' },
-    { name: 'Gold Sword',      emoji: '✨',  cat: 'weapons' },
-    { name: 'Netherite Sword', emoji: '🔥',  cat: 'weapons' },
-    { name: 'Bow',             emoji: '🏹',  cat: 'weapons' },
-    { name: 'Crossbow',        emoji: '🎯',  cat: 'weapons' },
-    { name: 'Trident',         emoji: '🔱',  cat: 'weapons' },
-    { name: 'Shield',          emoji: '🛡️',  cat: 'weapons' },
-    { name: 'Arrow',           emoji: '➡️',  cat: 'weapons' },
-    // Tools
-    { name: 'Wood Pickaxe',    emoji: '⛏️',  cat: 'tools' },
-    { name: 'Stone Pickaxe',   emoji: '⛏️',  cat: 'tools' },
-    { name: 'Iron Pickaxe',    emoji: '⚒️',  cat: 'tools' },
-    { name: 'Diamond Pickaxe', emoji: '💎',  cat: 'tools' },
-    { name: 'Netherite Pickaxe', emoji: '🔥', cat: 'tools' },
-    { name: 'Wood Axe',        emoji: '🪓',  cat: 'tools' },
-    { name: 'Iron Axe',        emoji: '🪓',  cat: 'tools' },
-    { name: 'Diamond Axe',     emoji: '💎',  cat: 'tools' },
-    { name: 'Shovel',          emoji: '🪣',  cat: 'tools' },
-    { name: 'Hoe',             emoji: '🌾',  cat: 'tools' },
-    { name: 'Fishing Rod',     emoji: '🎣',  cat: 'tools' },
-    { name: 'Shears',          emoji: '✂️',  cat: 'tools' },
-    { name: 'Flint & Steel',   emoji: '🔥',  cat: 'tools' },
-    { name: 'Compass',         emoji: '🧭',  cat: 'tools' },
-    { name: 'Clock',           emoji: '🕐',  cat: 'tools' },
-    { name: 'Spyglass',        emoji: '🔭',  cat: 'tools' },
-    // Armor
-    { name: 'Leather Helmet',  emoji: '🪖',  cat: 'armor' },
-    { name: 'Iron Helmet',     emoji: '⛑️',  cat: 'armor' },
-    { name: 'Diamond Helmet',  emoji: '💎',  cat: 'armor' },
-    { name: 'Netherite Helmet', emoji: '🔥', cat: 'armor' },
-    { name: 'Iron Chestplate', emoji: '🦺',  cat: 'armor' },
-    { name: 'Diamond Chestplate', emoji: '💎', cat: 'armor' },
-    { name: 'Elytra',          emoji: '🦋',  cat: 'armor' },
-    { name: 'Iron Leggings',   emoji: '👖',  cat: 'armor' },
-    { name: 'Diamond Boots',   emoji: '👢',  cat: 'armor' },
-    { name: 'Gold Armor',      emoji: '👑',  cat: 'armor' },
-    // Potions
-    { name: 'Health Potion',   emoji: '❤️',  cat: 'potions' },
-    { name: 'Speed Potion',    emoji: '💨',  cat: 'potions' },
-    { name: 'Strength Potion', emoji: '💪',  cat: 'potions' },
-    { name: 'Fire Resist Potion', emoji: '🔥', cat: 'potions' },
-    { name: 'Night Vision Potion', emoji: '👁️', cat: 'potions' },
-    { name: 'Invisibility Potion', emoji: '👻', cat: 'potions' },
-    { name: 'Poison Potion',   emoji: '☠️',  cat: 'potions' },
-    { name: 'Splash Potion',   emoji: '💦',  cat: 'potions' },
-    { name: 'Exp Bottle',      emoji: '🟢',  cat: 'potions' },
-    // Special
-    { name: 'Ender Pearl',     emoji: '🟣',  cat: 'special' },
-    { name: 'Eye of Ender',    emoji: '👁️',  cat: 'special' },
-    { name: 'Totem of Undying', emoji: '🗿', cat: 'special' },
-    { name: 'Enchanted Book',  emoji: '📖',  cat: 'special' },
-    { name: 'Lead',            emoji: '🪢',  cat: 'special' },
-    { name: 'Name Tag',        emoji: '🏷️',  cat: 'special' },
-    { name: 'Firework',        emoji: '🎆',  cat: 'special' },
-    { name: 'Map',             emoji: '🗺️',  cat: 'special' },
-    { name: 'Music Disc',      emoji: '💿',  cat: 'special' },
-    { name: 'TNT',             emoji: '💥',  cat: 'special' },
-    { name: 'Beacon',          emoji: '🔆',  cat: 'special' },
-    { name: 'Nether Star',     emoji: '⭐',  cat: 'special' },
+    { name: 'Wood Sword', cat: 'weapons' }, { name: 'Stone Sword', cat: 'weapons' },
+    { name: 'Iron Sword', cat: 'weapons' }, { name: 'Diamond Sword', cat: 'weapons' },
+    { name: 'Gold Sword', cat: 'weapons' }, { name: 'Netherite Sword', cat: 'weapons' },
+    { name: 'Bow', cat: 'weapons' }, { name: 'Crossbow', cat: 'weapons' },
+    { name: 'Trident', cat: 'weapons' }, { name: 'Shield', cat: 'weapons' },
+    { name: 'Arrow', cat: 'weapons' },
+    { name: 'Wood Pickaxe', cat: 'tools' }, { name: 'Stone Pickaxe', cat: 'tools' },
+    { name: 'Iron Pickaxe', cat: 'tools' }, { name: 'Diamond Pickaxe', cat: 'tools' },
+    { name: 'Netherite Pickaxe', cat: 'tools' }, { name: 'Wood Axe', cat: 'tools' },
+    { name: 'Iron Axe', cat: 'tools' }, { name: 'Diamond Axe', cat: 'tools' },
+    { name: 'Shovel', cat: 'tools' }, { name: 'Hoe', cat: 'tools' },
+    { name: 'Fishing Rod', cat: 'tools' }, { name: 'Shears', cat: 'tools' },
+    { name: 'Flint & Steel', cat: 'tools' }, { name: 'Compass', cat: 'tools' },
+    { name: 'Clock', cat: 'tools' }, { name: 'Spyglass', cat: 'tools' },
+    { name: 'Leather Helmet', cat: 'armor' }, { name: 'Iron Helmet', cat: 'armor' },
+    { name: 'Diamond Helmet', cat: 'armor' }, { name: 'Netherite Helmet', cat: 'armor' },
+    { name: 'Iron Chestplate', cat: 'armor' }, { name: 'Diamond Chestplate', cat: 'armor' },
+    { name: 'Elytra', cat: 'armor' }, { name: 'Iron Leggings', cat: 'armor' },
+    { name: 'Diamond Boots', cat: 'armor' }, { name: 'Gold Armor', cat: 'armor' },
+    { name: 'Health Potion', cat: 'potions' }, { name: 'Speed Potion', cat: 'potions' },
+    { name: 'Strength Potion', cat: 'potions' }, { name: 'Fire Resist Potion', cat: 'potions' },
+    { name: 'Night Vision Potion', cat: 'potions' }, { name: 'Invisibility Potion', cat: 'potions' },
+    { name: 'Poison Potion', cat: 'potions' }, { name: 'Splash Potion', cat: 'potions' },
+    { name: 'Exp Bottle', cat: 'potions' },
+    { name: 'Ender Pearl', cat: 'special' }, { name: 'Eye of Ender', cat: 'special' },
+    { name: 'Totem of Undying', cat: 'special' }, { name: 'Enchanted Book', cat: 'special' },
+    { name: 'Lead', cat: 'special' }, { name: 'Name Tag', cat: 'special' },
+    { name: 'Firework', cat: 'special' }, { name: 'Map', cat: 'special' },
+    { name: 'Music Disc', cat: 'special' }, { name: 'TNT', cat: 'special' },
+    { name: 'Beacon', cat: 'special' }, { name: 'Nether Star', cat: 'special' },
 ];
 
 let currentCatalogFilter = 'all';
 
 function buildCatalog(filter) {
     const grid = document.getElementById('catalog-grid');
+    const titleEl = document.getElementById('mc-tab-title');
+    if (titleEl) titleEl.textContent = TAB_TITLES[filter] || 'Items';
     grid.innerHTML = '';
+
+    if (filter === 'yours') {
+        state.inventory.filter(i => i.count > 0).forEach(item => {
+            const emoji = ITEM_EMOJI_MAP[item.name] || '📦';
+            const card = document.createElement('div');
+            card.className = 'catalog-item';
+            card.setAttribute('data-name', `${item.name} x${item.count}`);
+            card.innerHTML = `<span class="item-emoji">${emoji}</span>`;
+            card.onclick = () => state.equipItem(item);
+            grid.appendChild(card);
+        });
+        return;
+    }
+
     const items = filter === 'all' ? MINECRAFT_ITEMS : MINECRAFT_ITEMS.filter(i => i.cat === filter);
     items.forEach(item => {
+        const emoji = ITEM_EMOJI_MAP[item.name] || '📦';
         const card = document.createElement('div');
         card.className = 'catalog-item';
-        card.innerHTML = `<span class="item-emoji">${item.emoji}</span><span class="item-name">${item.name}</span>`;
-        card.onclick = () => {
-            state.addResource(item.name, 1);
-        };
+        card.setAttribute('data-name', item.name);
+        card.innerHTML = `<span class="item-emoji">${emoji}</span>`;
+        card.onclick = () => state.addResource(item.name, 1);
         grid.appendChild(card);
     });
 }
 
-document.querySelectorAll('.filter-btn').forEach(btn => {
+document.querySelectorAll('.mc-tab').forEach(btn => {
     btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.mc-tab').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentCatalogFilter = btn.dataset.cat;
         buildCatalog(currentCatalogFilter);
     });
 });
 
-// Build catalog on page load
 window.addEventListener('load', () => buildCatalog('all'));
-
 
 // --- MOVEMENT STATE ---
 let moveForward = false;
