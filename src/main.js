@@ -255,16 +255,7 @@ document.addEventListener('mousedown', (event) => {
 
     if (intersects.length > 0) {
         const intersection = intersects[0];
-        if (event.button === 0) { // LEFT CLICK: ALWAYS MINE/DIG
-            world.mineBlock(intersection.object, intersection.point);
-
-            // Spawn Boss after mining 5 blocks
-            const dirtCount = state.inventory.find(i => i.name === 'Dirt')?.count || 0;
-            if (dirtCount >= 5 && !bossSpawned) {
-                boss.activate();
-                bossSpawned = true;
-            }
-        } else if (event.button === 2 && !isAccessory) { // RIGHT CLICK: BUILD (if holding block)
+        if (event.button === 2 && !isAccessory) { // RIGHT CLICK: BUILD (if holding block)
             world.placeBlock(intersection.point, intersection.face.normal);
         }
     }
