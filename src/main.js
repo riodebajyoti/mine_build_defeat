@@ -231,7 +231,7 @@ document.addEventListener('mousedown', (event) => {
     raycaster.setFromCamera(mouse, camera);
 
     // Check Boss Hit FIRST
-    if (boss.active) {
+    if (boss.active && event.button === 0) {
         const attackIntersects = raycaster.intersectObject(boss.group, true);
         if (attackIntersects.length > 0) {
             boss.takeDamage(10);
@@ -241,24 +241,21 @@ document.addEventListener('mousedown', (event) => {
 
     const currentItem = state.inventory[state.selectedSlot];
     const baseBlocks = ['Dirt', 'Stone', 'Wood', 'Steel', 'Cores', 'Grass'];
-    const isAccessory = currentItem && !baseBlocks.includes(currentItem.name);
+    const isAccessory = currentItem && !baseBlocks.includes(currentItem.name) && currentItem.count > 0;
 
-    // Use accessory without needing a block
-    if (isAccessory) {
-        if (event.button === 2) {
-            state.showHelperMsg(`Used the ${currentItem.name}!`);
-            return;
-        } else if (event.button === 0) {
-            state.showHelperMsg(`Swung the ${currentItem.name}!`);
-            return;
-        }
+    // Right-click drops the accessory
+    if (isAccessory && event.button === 2) {
+        state.showHelperMsg(`Dropped the ${currentItem.name}!`);
+        currentItem.count = Math.max(0, currentItem.count - 1);
+        state.notify();
+        return;
     }
 
     const intersects = raycaster.intersectObjects(world.getSurfaceObjects());
 
     if (intersects.length > 0) {
         const intersection = intersects[0];
-        if (event.button === 0) { // LEFT CLICK: MINE
+        if (event.button === 0) { // LEFT CLICK: ALWAYS MINE/DIG
             world.mineBlock(intersection.object, intersection.point);
 
             // Spawn Boss after mining 5 blocks
@@ -267,7 +264,7 @@ document.addEventListener('mousedown', (event) => {
                 boss.activate();
                 bossSpawned = true;
             }
-        } else if (event.button === 2) { // RIGHT CLICK: BUILD
+        } else if (event.button === 2 && !isAccessory) { // RIGHT CLICK: BUILD (if holding block)
             world.placeBlock(intersection.point, intersection.face.normal);
         }
     }
