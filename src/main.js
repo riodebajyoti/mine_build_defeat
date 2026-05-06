@@ -212,14 +212,14 @@ const TAB_TITLES = {
 
 const ITEM_EMOJI_MAP = {
     // Weapons
-    'Wood Sword':'🗡️','Stone Sword':'⚔️','Iron Sword':'🔪','Diamond Sword':'💎',
-    'Gold Sword':'✨','Netherite Sword':'🔥','Bow':'🏹','Crossbow':'🎯',
+    'Wooden Sword':'🗡️','Stone Sword':'⚔️','Iron Sword':'🔪','Diamond Sword':'💎',
+    'Golden Sword':'✨','Netherite Sword':'🔥','Bow':'🏹','Crossbow':'🎯',
     'Trident':'🔱','Shield':'🛡️','Arrow':'➡️',
     // Tools
-    'Wood Pickaxe':'⛏️','Stone Pickaxe':'⛏️','Iron Pickaxe':'⚒️','Diamond Pickaxe':'💎',
-    'Netherite Pickaxe':'🔥','Wood Axe':'🪓','Iron Axe':'🪓','Diamond Axe':'💎',
+    'Wooden Pickaxe':'⛏️','Stone Pickaxe':'⛏️','Iron Pickaxe':'⚒️','Diamond Pickaxe':'💎',
+    'Netherite Pickaxe':'🔥','Wooden Axe':'🪓','Iron Axe':'🪓','Diamond Axe':'💎',
     'Shovel':'🪣','Hoe':'🌾','Fishing Rod':'🎣','Shears':'✂️',
-    'Flint & Steel':'🔥','Compass':'🧭','Clock':'🕐','Spyglass':'🔭',
+    'Flint and Steel':'🔥','Compass':'🧭','Clock':'🕐','Spyglass':'🔭',
     // Armor
     'Leather Helmet':'🪖','Iron Helmet':'⛑️','Diamond Helmet':'💎','Netherite Helmet':'🔥',
     'Iron Chestplate':'🦺','Diamond Chestplate':'💎','Elytra':'🦋',
@@ -237,7 +237,7 @@ const ITEM_EMOJI_MAP = {
     'Jukebox':'🎵','Note Block':'🎵','Bell':'🔔','Flower Pot':'🌺',
     // Food
     'Apple':'🍎','Golden Apple':'🍏','Enchanted Golden Apple':'⭐',
-    'Bread':'🍞','Cooked Chicken':'🍗','Cooked Beef':'🥩','Cooked Pork':'🥓',
+    'Bread':'🍞','Cooked Chicken':'🍗','Cooked Beef':'🥩','Cooked Porkchop':'🥓',
     'Cooked Mutton':'🍖','Cooked Rabbit':'🍖','Cooked Cod':'🐟','Cooked Salmon':'🐟',
     'Cake':'🎂','Cookie':'🍪','Pumpkin Pie':'🥧','Melon Slice':'🍈',
     'Carrot':'🥕','Golden Carrot':'🌟','Potato':'🥔','Baked Potato':'🥔',
@@ -267,19 +267,19 @@ const ITEM_EMOJI_MAP = {
 };
 
 const MINECRAFT_ITEMS = [
-    { name: 'Wood Sword', cat: 'weapons' }, { name: 'Stone Sword', cat: 'weapons' },
+    { name: 'Wooden Sword', cat: 'weapons' }, { name: 'Stone Sword', cat: 'weapons' },
     { name: 'Iron Sword', cat: 'weapons' }, { name: 'Diamond Sword', cat: 'weapons' },
-    { name: 'Gold Sword', cat: 'weapons' }, { name: 'Netherite Sword', cat: 'weapons' },
+    { name: 'Golden Sword', cat: 'weapons' }, { name: 'Netherite Sword', cat: 'weapons' },
     { name: 'Bow', cat: 'weapons' }, { name: 'Crossbow', cat: 'weapons' },
     { name: 'Trident', cat: 'weapons' }, { name: 'Shield', cat: 'weapons' },
     { name: 'Arrow', cat: 'weapons' },
-    { name: 'Wood Pickaxe', cat: 'tools' }, { name: 'Stone Pickaxe', cat: 'tools' },
+    { name: 'Wooden Pickaxe', cat: 'tools' }, { name: 'Stone Pickaxe', cat: 'tools' },
     { name: 'Iron Pickaxe', cat: 'tools' }, { name: 'Diamond Pickaxe', cat: 'tools' },
-    { name: 'Netherite Pickaxe', cat: 'tools' }, { name: 'Wood Axe', cat: 'tools' },
+    { name: 'Netherite Pickaxe', cat: 'tools' }, { name: 'Wooden Axe', cat: 'tools' },
     { name: 'Iron Axe', cat: 'tools' }, { name: 'Diamond Axe', cat: 'tools' },
     { name: 'Shovel', cat: 'tools' }, { name: 'Hoe', cat: 'tools' },
     { name: 'Fishing Rod', cat: 'tools' }, { name: 'Shears', cat: 'tools' },
-    { name: 'Flint & Steel', cat: 'tools' }, { name: 'Compass', cat: 'tools' },
+    { name: 'Flint and Steel', cat: 'tools' }, { name: 'Compass', cat: 'tools' },
     { name: 'Clock', cat: 'tools' }, { name: 'Spyglass', cat: 'tools' },
     { name: 'Leather Helmet', cat: 'armor' }, { name: 'Iron Helmet', cat: 'armor' },
     { name: 'Diamond Helmet', cat: 'armor' }, { name: 'Netherite Helmet', cat: 'armor' },
@@ -328,7 +328,7 @@ const MINECRAFT_ITEMS = [
     { name: 'Apple', cat: 'food' }, { name: 'Golden Apple', cat: 'food' },
     { name: 'Enchanted Golden Apple', cat: 'food' }, { name: 'Bread', cat: 'food' },
     { name: 'Cooked Chicken', cat: 'food' }, { name: 'Cooked Beef', cat: 'food' },
-    { name: 'Cooked Pork', cat: 'food' }, { name: 'Cooked Mutton', cat: 'food' },
+    { name: 'Cooked Porkchop', cat: 'food' }, { name: 'Cooked Mutton', cat: 'food' },
     { name: 'Cooked Rabbit', cat: 'food' }, { name: 'Cooked Cod', cat: 'food' },
     { name: 'Cooked Salmon', cat: 'food' }, { name: 'Cake', cat: 'food' },
     { name: 'Cookie', cat: 'food' }, { name: 'Pumpkin Pie', cat: 'food' },
