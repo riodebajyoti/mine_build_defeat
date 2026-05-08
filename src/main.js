@@ -136,13 +136,32 @@ const controls = new PointerLockControls(camera, renderer.domElement);
 const startBtn = document.getElementById('start-btn');
 const overlay = document.getElementById('overlay');
 
-if (startBtn && overlay) {
-    startBtn.addEventListener('click', () => {
-        controls.lock();
+// DEBUG: verify DOM & pointerlock flow
+console.log('DEBUG: game-container exists?', !!document.getElementById('game-container'));
+console.log('DEBUG: startBtn present?', !!startBtn, 'overlay present?', !!overlay);
+
+if (controls) {
+    controls.addEventListener('lock', () => console.log('DEBUG: pointer locked'));
+    controls.addEventListener('unlock', () => console.log('DEBUG: pointer unlocked'));
+} else {
+    console.warn('DEBUG: controls not defined');
+}
+
+if (startBtn) {
+    startBtn.addEventListener('click', (e) => {
+        console.log('DEBUG: start button clicked (user gesture). Attempting pointer lock...');
+        try { controls.lock(); } catch (err) { console.error('DEBUG: controls.lock() threw', err); }
     });
 } else {
-    console.warn('Start button or overlay not found in DOM:', { startBtn: !!startBtn, overlay: !!overlay });
+    console.warn('DEBUG: start button missing');
 }
+
+// TEMP fallback (testing): hide overlay and enable movement if pointer lock fails
+startBtn?.addEventListener('click', () => {
+    if (overlay) overlay.style.display = 'none';
+    state.isPointerLocked = true;
+    console.warn('TEMP: pointer lock fallback enabled (testing).');
+});
 
 controls.addEventListener('lock', () => {
     if (overlay) overlay.style.display = 'none';
@@ -454,158 +473,4 @@ const onKeyUp = (event) => {
 };
 
 document.addEventListener('keydown', onKeyDown);
-document.addEventListener('keyup', onKeyUp);
-
-// --- MINING & BUILDING ---
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2(0, 0); // Center
-
-document.addEventListener('mousedown', (event) => {
-    if (!state.isPointerLocked) return;
-
-    // Only trigger swing on right-click
-    if (event.button === 2) {
-        isSwinging = true;
-        swingTime = 0;
-    }
-
-    raycaster.setFromCamera(mouse, camera);
-
-    // Check Boss Hit FIRST
-    if (boss.active && event.button === 0) {
-        const attackIntersects = raycaster.intersectObject(boss.group, true);
-        if (attackIntersects.length > 0) {
-            boss.takeDamage(10);
-            return;
-        }
-    }
-
-    const currentItem = state.inventory[state.selectedSlot];
-    const baseBlocks = ['Dirt', 'Stone', 'Wood', 'Steel', 'Cores', 'Grass'];
-    const isAccessory = currentItem && !baseBlocks.includes(currentItem.name) && currentItem.count > 0;
-
-    // Right-click drops the accessory
-    if (isAccessory && event.button === 2) {
-        state.showHelperMsg(`Dropped the ${currentItem.name}!`);
-        currentItem.count = Math.max(0, currentItem.count - 1);
-        state.notify();
-        return;
-    }
-
-    const intersects = raycaster.intersectObjects(world.getSurfaceObjects());
-
-    if (intersects.length > 0) {
-        const intersection = intersects[0];
-        if (event.button === 0) { // LEFT CLICK: ALWAYS MINE/DIG
-            world.mineBlock(intersection.object, intersection.point);
-
-            // Spawn Boss after mining 5 blocks
-            const dirtCount = state.inventory.find(i => i.name === 'Dirt')?.count || 0;
-            if (dirtCount >= 5 && !bossSpawned) {
-                boss.activate();
-                bossSpawned = true;
-            }
-        } else if (event.button === 2 && !isAccessory) { // RIGHT CLICK: BUILD (if holding block)
-            world.placeBlock(intersection.point, intersection.face.normal);
-        }
-    }
-});
-
-let prevTime = performance.now();
-let swingTime = 0;
-let isSwinging = false;
-let bobTime = 0;
-
-function animate() {
-    requestAnimationFrame(animate);
-
-    const time = performance.now();
-    const delta = (time - prevTime) / 1000;
-
-    if (state.isPointerLocked) {
-        // Physics & Movement
-        velocity.x -= velocity.x * 10.0 * delta;
-        velocity.z -= velocity.z * 10.0 * delta;
-        velocity.y -= GRAVITY * delta;
-
-        direction.z = Number(moveForward) - Number(moveBackward);
-        direction.x = Number(moveRight) - Number(moveLeft);
-        direction.normalize();
-
-        if (moveForward || moveBackward) velocity.z -= direction.z * MOVE_SPEED * 10.0 * delta;
-        if (moveLeft || moveRight) velocity.x -= direction.x * MOVE_SPEED * 10.0 * delta;
-
-        controls.moveRight(-velocity.x * delta);
-        controls.moveForward(-velocity.z * delta);
-
-        camera.position.y += (velocity.y * delta);
-
-        // Ground Collision (Simple)
-        if (camera.position.y < 2) {
-            velocity.y = 0;
-            camera.position.y = 2;
-            canJump = true;
-        }
-
-        // Hand Animations
-        if (isSwinging) {
-            swingTime += delta * 20; // Minecraft swings are fast
-            if (swingTime > Math.PI) {
-                isSwinging = false;
-                handGroup.rotation.set(0, 0, 0);
-                handGroup.position.set(0.5, -0.4, -0.8);
-            } else {
-                // Minecraft swing: strikes down, inwards, and rotates forward
-                const progress = Math.sin(swingTime);
-                handGroup.rotation.x = -progress * 1.2;
-                handGroup.rotation.y = progress * 0.5;
-                handGroup.rotation.z = progress * 0.4;
-                handGroup.position.y = -0.4 - progress * 0.3;
-                handGroup.position.z = -0.8 - progress * 0.2;
-                handGroup.position.x = 0.5 - progress * 0.2;
-            }
-        } else {
-            const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
-            if (speed > 0.1 && canJump) {
-                bobTime += delta * 12;
-                handGroup.position.y = -0.4 + Math.sin(bobTime) * 0.05;
-                handGroup.position.x = 0.5 + Math.cos(bobTime * 0.5) * 0.02;
-            } else {
-                handGroup.position.y = THREE.MathUtils.lerp(handGroup.position.y, -0.4, delta * 10);
-                handGroup.position.x = THREE.MathUtils.lerp(handGroup.position.x, 0.5, delta * 10);
-            }
-            handGroup.position.z = -0.8;
-            handGroup.rotation.set(0, 0, 0);
-        }
-
-        // Robot Follow Logic
-        const targetPos = camera.position.clone();
-        const cameraDirection = new THREE.Vector3();
-        camera.getWorldDirection(cameraDirection);
-
-        const right = new THREE.Vector3().crossVectors(cameraDirection, camera.up).normalize();
-        targetPos.addScaledVector(cameraDirection, -1.5);
-        targetPos.addScaledVector(right, 1.2);
-        targetPos.y += Math.sin(time * 0.002) * 0.2;
-
-        robotGroup.position.lerp(targetPos, delta * 3);
-
-        const lookTarget = camera.position.clone().addScaledVector(cameraDirection, 10);
-        robotGroup.lookAt(lookTarget);
-
-        world.update(delta, camera.position);
-        boss.update(delta);
-    }
-
-    renderer.render(scene, camera);
-    prevTime = time;
-}
-
-animate();
-
-// Handle Resize
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
+DOCUMENT_TOO_LONG
