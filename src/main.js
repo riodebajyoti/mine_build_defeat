@@ -181,7 +181,7 @@ const closeAccessoriesBtn = document.getElementById('close-accessories-btn');
 const accessorySearch = document.getElementById('accessory-search');
 const accessoryGetBtn = document.getElementById('accessory-get-btn');
 
-let isAccessoriesMenuOpen = false;
+var isAccessoriesMenuOpen = false;
 
 function toggleAccessoriesMenu() {
     isAccessoriesMenuOpen = !isAccessoriesMenuOpen;
