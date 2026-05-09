@@ -3,6 +3,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import { state } from './state.js';
 import { VoxelWorld } from './world.js';
 import { Boss } from './boss.js';
+import { Monster } from './monster.js';
 
 // --- CONFIG ---
 const MOVE_SPEED = 10.0;
@@ -126,15 +127,39 @@ const world = new VoxelWorld(scene);
 world.generateChunk(0, 0);
 updateHandModel(); // Initialize hand now that we have state/world
 
-// --- BOSS ---
+// --- ENEMY SYSTEM ---
 const boss = new Boss(scene, camera);
 let bossSpawned = false;
+let monsters = [];
+let nextMonsterSpawn = 10;
+let gameMode = 'creative';
 
 // --- CONTROLS ---
 // Use renderer.domElement for PointerLock target and add safe guards
 const controls = new PointerLockControls(camera, renderer.domElement);
 const startBtn = document.getElementById('start-btn');
 const overlay = document.getElementById('overlay');
+
+// --- MODE SELECTION ---
+const modeTabs = document.querySelectorAll('.modal-tab');
+const creativeInfo = document.getElementById('mode-creative-info');
+const survivalInfo = document.getElementById('mode-survival-info');
+
+modeTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        modeTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        gameMode = tab.dataset.mode;
+        
+        if (gameMode === 'creative') {
+            creativeInfo.style.display = 'block';
+            survivalInfo.style.display = 'none';
+        } else {
+            creativeInfo.style.display = 'none';
+            survivalInfo.style.display = 'block';
+        }
+    });
+});
 
 // DEBUG: verify DOM & pointerlock flow
 console.log('DEBUG: game-container exists?', !!document.getElementById('game-container'));
@@ -245,58 +270,58 @@ const TAB_TITLES = {
 
 const ITEM_EMOJI_MAP = {
     // Weapons
-    'Wooden Sword':'🗡️','Stone Sword':'⚔️','Iron Sword':'🔪','Diamond Sword':'💎',
-    'Golden Sword':'✨','Netherite Sword':'🔥','Bow':'🏹','Crossbow':'🎯',
-    'Trident':'🔱','Shield':'🛡️','Arrow':'➡️',
+    'Wooden Sword': '🗡️', 'Stone Sword': '⚔️', 'Iron Sword': '🔪', 'Diamond Sword': '💎',
+    'Golden Sword': '✨', 'Netherite Sword': '🔥', 'Bow': '🏹', 'Crossbow': '🎯',
+    'Trident': '🔱', 'Shield': '🛡️', 'Arrow': '➡️',
     // Tools
-    'Wooden Pickaxe':'⛏️','Stone Pickaxe':'⛏️','Iron Pickaxe':'⚒️','Diamond Pickaxe':'💎',
-    'Netherite Pickaxe':'🔥','Wooden Axe':'🪓','Iron Axe':'🪓','Diamond Axe':'💎',
-    'Shovel':'🪣','Hoe':'🌾','Fishing Rod':'🎣','Shears':'✂️',
-    'Flint and Steel':'🔥','Compass':'🧭','Clock':'🕐','Spyglass':'🔭',
+    'Wooden Pickaxe': '⛏️', 'Stone Pickaxe': '⛏️', 'Iron Pickaxe': '⚒️', 'Diamond Pickaxe': '💎',
+    'Netherite Pickaxe': '🔥', 'Wooden Axe': '🪓', 'Iron Axe': '🪓', 'Diamond Axe': '💎',
+    'Shovel': '🪣', 'Hoe': '🌾', 'Fishing Rod': '🎣', 'Shears': '✂️',
+    'Flint and Steel': '🔥', 'Compass': '🧭', 'Clock': '🕐', 'Spyglass': '🔭',
     // Armor
-    'Leather Helmet':'🪖','Iron Helmet':'⛑️','Diamond Helmet':'💎','Netherite Helmet':'🔥',
-    'Iron Chestplate':'🦺','Diamond Chestplate':'💎','Elytra':'🦋',
-    'Iron Leggings':'👖','Diamond Boots':'👢','Gold Armor':'👑','Turtle Shell':'🐢',
+    'Leather Helmet': '🪖', 'Iron Helmet': '⛑️', 'Diamond Helmet': '💎', 'Netherite Helmet': '🔥',
+    'Iron Chestplate': '🦺', 'Diamond Chestplate': '💎', 'Elytra': '🦋',
+    'Iron Leggings': '👖', 'Diamond Boots': '👢', 'Gold Armor': '👑', 'Turtle Shell': '🐢',
     // Blocks & Furniture
-    'Red Bed':'🛏️','Blue Bed':'🛏️','White Bed':'🛏️','Yellow Bed':'🛏️',
-    'Green Bed':'🛏️','Purple Bed':'🛏️','Black Bed':'🛏️','Pink Bed':'🛏️',
-    'Orange Bed':'🛏️','Cyan Bed':'🛏️',
-    'Chest':'📦','Ender Chest':'🟣','Trapped Chest':'⚠️',
-    'Crafting Table':'🪵','Furnace':'🔥','Blast Furnace':'🔥','Smoker':'🍖',
-    'Enchanting Table':'📖','Anvil':'⚙️','Grindstone':'⚙️','Smithing Table':'🔨',
-    'Bookshelf':'📚','Cauldron':'🪣','Barrel':'🪣','Composter':'🌿',
-    'Lectern':'📖','Cartography Table':'🗺️','Loom':'🧵','Stonecutter':'🪨',
-    'Bed':'🛏️','Lantern':'🏮','Soul Lantern':'💙','Campfire':'🔥',
-    'Jukebox':'🎵','Note Block':'🎵','Bell':'🔔','Flower Pot':'🌺',
+    'Red Bed': '🛏️', 'Blue Bed': '🛏️', 'White Bed': '🛏️', 'Yellow Bed': '🛏️',
+    'Green Bed': '🛏️', 'Purple Bed': '🛏️', 'Black Bed': '🛏️', 'Pink Bed': '🛏️',
+    'Orange Bed': '🛏️', 'Cyan Bed': '🛏️',
+    'Chest': '📦', 'Ender Chest': '🟣', 'Trapped Chest': '⚠️',
+    'Crafting Table': '🪵', 'Furnace': '🔥', 'Blast Furnace': '🔥', 'Smoker': '🍖',
+    'Enchanting Table': '📖', 'Anvil': '⚙️', 'Grindstone': '⚙️', 'Smithing Table': '🔨',
+    'Bookshelf': '📚', 'Cauldron': '🪣', 'Barrel': '🪣', 'Composter': '🌿',
+    'Lectern': '📖', 'Cartography Table': '🗺️', 'Loom': '🧵', 'Stonecutter': '🪨',
+    'Bed': '🛏️', 'Lantern': '🏮', 'Soul Lantern': '💙', 'Campfire': '🔥',
+    'Jukebox': '🎵', 'Note Block': '🎵', 'Bell': '🔔', 'Flower Pot': '🌺',
     // Food
-    'Apple':'🍎','Golden Apple':'🍏','Enchanted Golden Apple':'⭐',
-    'Bread':'🍞','Cooked Chicken':'🍗','Cooked Beef':'🥩','Cooked Porkchop':'🥓',
-    'Cooked Mutton':'🍖','Cooked Rabbit':'🍖','Cooked Cod':'🐟','Cooked Salmon':'🐟',
-    'Cake':'🎂','Cookie':'🍪','Pumpkin Pie':'🥧','Melon Slice':'🍈',
-    'Carrot':'🥕','Golden Carrot':'🌟','Potato':'🥔','Baked Potato':'🥔',
-    'Beetroot':'🟣','Beetroot Soup':'🍲','Mushroom Stew':'🍲','Rabbit Stew':'🍲',
-    'Suspicious Stew':'🍲','Honey Bottle':'🍯','Sweet Berries':'🫐','Dried Kelp':'🌿',
-    'Glow Berries':'✨','Milk Bucket':'🥛',
+    'Apple': '🍎', 'Golden Apple': '🍏', 'Enchanted Golden Apple': '⭐',
+    'Bread': '🍞', 'Cooked Chicken': '🍗', 'Cooked Beef': '🥩', 'Cooked Porkchop': '🥓',
+    'Cooked Mutton': '🍖', 'Cooked Rabbit': '🍖', 'Cooked Cod': '🐟', 'Cooked Salmon': '🐟',
+    'Cake': '🎂', 'Cookie': '🍪', 'Pumpkin Pie': '🥧', 'Melon Slice': '🍈',
+    'Carrot': '🥕', 'Golden Carrot': '🌟', 'Potato': '🥔', 'Baked Potato': '🥔',
+    'Beetroot': '🟣', 'Beetroot Soup': '🍲', 'Mushroom Stew': '🍲', 'Rabbit Stew': '🍲',
+    'Suspicious Stew': '🍲', 'Honey Bottle': '🍯', 'Sweet Berries': '🫐', 'Dried Kelp': '🌿',
+    'Glow Berries': '✨', 'Milk Bucket': '🥛',
     // Materials
-    'Iron Ingot':'🔩','Gold Ingot':'🟡','Diamond':'💎','Emerald':'💚',
-    'Netherite Ingot':'⬛','Copper Ingot':'🟠','Amethyst Shard':'🟣',
-    'Lapis Lazuli':'🔵','Coal':'⚫','Redstone':'🔴','Quartz':'⬜',
-    'Glowstone Dust':'💛','Blaze Rod':'🔥','Ender Eye':'👁️','Ghast Tear':'💧',
-    'Slimeball':'🟢','Spider Eye':'🕷️','Gunpowder':'💥','String':'🧵',
-    'Leather':'🟫','Wool':'🧶','Feather':'🪶','Bone':'🦴','Ink Sac':'⬛',
+    'Iron Ingot': '🔩', 'Gold Ingot': '🟡', 'Diamond': '💎', 'Emerald': '💚',
+    'Netherite Ingot': '⬛', 'Copper Ingot': '🟠', 'Amethyst Shard': '🟣',
+    'Lapis Lazuli': '🔵', 'Coal': '⚫', 'Redstone': '🔴', 'Quartz': '⬜',
+    'Glowstone Dust': '💛', 'Blaze Rod': '🔥', 'Ender Eye': '👁️', 'Ghast Tear': '💧',
+    'Slimeball': '🟢', 'Spider Eye': '🕷️', 'Gunpowder': '💥', 'String': '🧵',
+    'Leather': '🟫', 'Wool': '🧶', 'Feather': '🪶', 'Bone': '🦴', 'Ink Sac': '⬛',
     // Potions
-    'Health Potion':'❤️','Speed Potion':'💨','Strength Potion':'💪',
-    'Fire Resist Potion':'🔥','Night Vision Potion':'👁️','Invisibility Potion':'👻',
-    'Poison Potion':'☠️','Splash Potion':'💦','Exp Bottle':'🟢',
-    'Slowness Potion':'🐢','Weakness Potion':'💔','Regeneration Potion':'💗',
-    'Leaping Potion':'🦘','Water Breathing Potion':'🫧','Luck Potion':'🍀',
+    'Health Potion': '❤️', 'Speed Potion': '💨', 'Strength Potion': '💪',
+    'Fire Resist Potion': '🔥', 'Night Vision Potion': '👁️', 'Invisibility Potion': '👻',
+    'Poison Potion': '☠️', 'Splash Potion': '💦', 'Exp Bottle': '🟢',
+    'Slowness Potion': '🐢', 'Weakness Potion': '💔', 'Regeneration Potion': '💗',
+    'Leaping Potion': '🦘', 'Water Breathing Potion': '🫧', 'Luck Potion': '🍀',
     // Special
-    'Ender Pearl':'🟣','Eye of Ender':'👁️','Totem of Undying':'🗿',
-    'Enchanted Book':'📖','Lead':'🪢','Name Tag':'🏷️','Firework':'🎆',
-    'Map':'🗺️','Music Disc':'💿','TNT':'💥','Beacon':'🔆','Nether Star':'⭐',
-    'Dragon Egg':'🥚','Nether Portal':'🌀','Saddle':'🐴','Horse Armor':'🐴',
+    'Ender Pearl': '🟣', 'Eye of Ender': '👁️', 'Totem of Undying': '🗿',
+    'Enchanted Book': '📖', 'Lead': '🪢', 'Name Tag': '🏷️', 'Firework': '🎆',
+    'Map': '🗺️', 'Music Disc': '💿', 'TNT': '💥', 'Beacon': '🔆', 'Nether Star': '⭐',
+    'Dragon Egg': '🥚', 'Nether Portal': '🌀', 'Saddle': '🐴', 'Horse Armor': '🐴',
     // Base blocks
-    'Dirt':'🟫','Stone':'⬜','Wood':'🪵','Steel':'⚙️','Cores':'🔵','Grass':'🟩',
+    'Dirt': '🟫', 'Stone': '⬜', 'Wood': '🪵', 'Steel': '⚙️', 'Cores': '🔵', 'Grass': '🟩',
 };
 
 const MINECRAFT_ITEMS = [
@@ -491,11 +516,24 @@ document.addEventListener('mousedown', (event) => {
     raycaster.setFromCamera(mouse, camera);
 
     // Check Boss Hit FIRST
-    if (boss.active && event.button === 0) {
+    if (gameMode === 'survival' && boss.active && event.button === 0) {
         const attackIntersects = raycaster.intersectObject(boss.group, true);
         if (attackIntersects.length > 0) {
             boss.takeDamage(10);
             return;
+        }
+    }
+
+    // Check Monsters Hit
+    if (gameMode === 'survival' && event.button === 0) {
+        for (const monster of monsters) {
+            if (monster.active) {
+                const attackIntersects = raycaster.intersectObject(monster.group, true);
+                if (attackIntersects.length > 0) {
+                    monster.takeDamage(10);
+                    return;
+                }
+            }
         }
     }
 
@@ -518,9 +556,9 @@ document.addEventListener('mousedown', (event) => {
         if (event.button === 0) { // LEFT CLICK: ALWAYS MINE/DIG
             world.mineBlock(intersection.object, intersection.point, intersection.face.normal);
 
-            // Spawn Boss after mining 5 blocks
+            // Spawn Boss after mining 5 blocks (Survival Only)
             const dirtCount = state.inventory.find(i => i.name === 'Dirt')?.count || 0;
-            if (dirtCount >= 5 && !bossSpawned) {
+            if (gameMode === 'survival' && dirtCount >= 5 && !bossSpawned) {
                 boss.activate();
                 bossSpawned = true;
             }
@@ -569,7 +607,7 @@ function animate() {
                 break;
             }
         }
-        
+
         if (camera.position.y < groundY) {
             velocity.y = 0;
             camera.position.y = groundY;
@@ -623,7 +661,20 @@ function animate() {
         robotGroup.lookAt(lookTarget);
 
         world.update(delta, camera.position);
-        boss.update(delta);
+        
+        if (gameMode === 'survival') {
+            boss.update(delta);
+            
+            // Periodically spawn monsters
+            nextMonsterSpawn -= delta;
+            if (nextMonsterSpawn <= 0 && monsters.length < 15) {
+                monsters.push(new Monster(scene));
+                nextMonsterSpawn = 5 + Math.random() * 8;
+            }
+            
+            monsters.forEach(m => m.update(delta, camera.position, world));
+            monsters = monsters.filter(m => m.active);
+        }
     }
 
     renderer.render(scene, camera);
