@@ -29,7 +29,7 @@ export class VoxelWorld {
                 // Simple height generation
                 const height = Math.floor(Math.sin(worldX * 0.2) * 2 + Math.cos(worldZ * 0.2) * 2 + 5);
 
-                for (let y = 0; y < height; y++) {
+                for (let y = -15; y < height; y++) {
                     const type = y === height - 1 ? 'Grass' : (y > height - 4 ? 'Dirt' : 'Stone');
                     this.setBlock(worldX, y, worldZ, type);
                 }
@@ -92,20 +92,11 @@ export class VoxelWorld {
         return Object.values(this.instancedMeshes);
     }
 
-    mineBlock(mesh, intersectionPoint) {
-        // Find which block in the instanced mesh was hit
-        // Note: For simplicity in this demo, we'll use a more direct approach 
-        // by calculating position from the intersection point and normal.
-        const raycaster = new THREE.Raycaster();
-        // Since we know the block size is 1, we can find the block center
-        const x = Math.round(intersectionPoint.x);
-        const y = Math.round(intersectionPoint.y);
-        const z = Math.round(intersectionPoint.z);
-
-        // Raycasting from slightly outside towards the block to find the exact block hit
-        // But for a voxel game, rounding the intersection point - normal * 0.5 works best
-        // Actually, normal is easier to get from the intersection object if it was a single mesh.
-        // For InstancedMesh, we'll just use the rounded point for now.
+    mineBlock(mesh, intersectionPoint, normal) {
+        // Use normal to find the exact block center inside the volume
+        const x = Math.round(intersectionPoint.x - normal.x * 0.5);
+        const y = Math.round(intersectionPoint.y - normal.y * 0.5);
+        const z = Math.round(intersectionPoint.z - normal.z * 0.5);
 
         const type = this.blocks.get(`${x},${y},${z}`);
         if (type) {

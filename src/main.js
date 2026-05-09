@@ -516,7 +516,7 @@ document.addEventListener('mousedown', (event) => {
     if (intersects.length > 0) {
         const intersection = intersects[0];
         if (event.button === 0) { // LEFT CLICK: ALWAYS MINE/DIG
-            world.mineBlock(intersection.object, intersection.point);
+            world.mineBlock(intersection.object, intersection.point, intersection.face.normal);
 
             // Spawn Boss after mining 5 blocks
             const dirtCount = state.inventory.find(i => i.name === 'Dirt')?.count || 0;
