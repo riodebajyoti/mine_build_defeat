@@ -127,6 +127,22 @@
         </div>
     </div>
 
+    <!-- Agent Command Console -->
+    <div id="agent-console" style="display: none;">
+        <div class="agent-header">
+            <div class="agent-avatar">🤖</div>
+            <div class="agent-title">AGENT CONSOLE</div>
+            <button class="agent-close" id="close-agent-btn">✕</button>
+        </div>
+        <div class="agent-history" id="agent-history">
+            <div class="agent-msg"><span class="agent-name">Agent:</span> Systems online. Type 'help' for commands.</div>
+        </div>
+        <div class="agent-input-area">
+            <span class="agent-prompt">&gt;</span>
+            <input type="text" id="agent-input" class="agent-input-field" placeholder="Enter command..." autocomplete="off">
+        </div>
+    </div>
+
     <script type="module" src="src/main.js"></script>
 </body>
 

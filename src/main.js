@@ -226,6 +226,144 @@ closeAccessoriesBtn.addEventListener('click', () => {
     if (isAccessoriesMenuOpen) toggleAccessoriesMenu();
 });
 
+// --- AGENT CONSOLE ---
+const agentConsole = document.getElementById('agent-console');
+const closeAgentBtn = document.getElementById('close-agent-btn');
+const agentInput = document.getElementById('agent-input');
+const agentHistory = document.getElementById('agent-history');
+
+var isAgentConsoleOpen = false;
+
+function toggleAgentConsole() {
+    isAgentConsoleOpen = !isAgentConsoleOpen;
+    if (isAgentConsoleOpen) {
+        controls.unlock();
+        overlay.style.display = 'none';
+        if (isAccessoriesMenuOpen) toggleAccessoriesMenu(); // Close accessories if open
+        agentConsole.style.display = 'flex';
+        setTimeout(() => agentInput.focus(), 50); // Focus input
+    } else {
+        agentConsole.style.display = 'none';
+        agentInput.blur();
+        controls.lock();
+    }
+}
+
+closeAgentBtn.addEventListener('click', () => {
+    if (isAgentConsoleOpen) toggleAgentConsole();
+});
+
+function appendAgentMessage(text, isPlayer = false) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = isPlayer ? 'agent-msg player-msg' : 'agent-msg';
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.className = isPlayer ? 'player-name' : 'agent-name';
+    nameSpan.textContent = isPlayer ? 'You:' : 'Agent:';
+    
+    msgDiv.appendChild(nameSpan);
+    msgDiv.appendChild(document.createTextNode(' ' + text));
+    
+    agentHistory.appendChild(msgDiv);
+    agentHistory.scrollTop = agentHistory.scrollHeight; // Auto-scroll
+}
+
+function parseAgentCommand(cmdString) {
+    const args = cmdString.trim().split(/\s+/);
+    if (args.length === 0 || args[0] === '') return;
+    
+    const command = args[0].toLowerCase();
+    
+    appendAgentMessage(cmdString, true);
+    
+    switch (command) {
+        case 'help':
+            appendAgentMessage("Available commands: 'give <item> [amount]', 'mode <creative|survival>', 'heal', 'help'.");
+            break;
+        case 'heal':
+            state.setHP(100);
+            state.energy = 100; // Directly setting energy if setEnergy isn't exposed
+            state.notify();
+            appendAgentMessage("Vitals restored to 100%. Keep fighting, Captain!");
+            break;
+        case 'kill':
+            if (args.length > 1) {
+                const target = args[1].toLowerCase();
+                if (target === 'ios2' || target === 'ios-2' || target === 'boss') {
+                    if (gameMode === 'survival' && boss.active) {
+                        boss.takeDamage(10000); // Massive damage to instantly kill
+                        appendAgentMessage("Target 'ios-2' has been eliminated by command override.");
+                    } else {
+                        appendAgentMessage("Target 'ios-2' is not active or you are not in survival mode.");
+                    }
+                } else if (target === 'all' || target === 'monsters') {
+                    if (gameMode === 'survival') {
+                        monsters.forEach(m => {
+                            if (m.active) m.takeDamage(10000);
+                        });
+                        appendAgentMessage("All active monsters have been cleared.");
+                    } else {
+                        appendAgentMessage("You are not in survival mode.");
+                    }
+                } else {
+                    appendAgentMessage(`Unknown target '${target}'. Try 'kill ios2' or 'kill all'.`);
+                }
+            } else {
+                appendAgentMessage("Usage: kill <target> (e.g., 'kill ios2', 'kill all')");
+            }
+            break;
+        case 'mode':
+            if (args.length > 1) {
+                const newMode = args[1].toLowerCase();
+                if (newMode === 'creative' || newMode === 'survival') {
+                    // Simulate clicking the tab
+                    const tabId = newMode === 'creative' ? 'tab-creative' : 'tab-survival';
+                    const tab = document.getElementById(tabId);
+                    if (tab) {
+                        tab.click();
+                        appendAgentMessage(`Game mode switched to ${newMode.toUpperCase()}.`);
+                        toggleAgentConsole(); // Close console after mode switch to show UI
+                    } else {
+                         appendAgentMessage(`Error switching to ${newMode}.`);
+                    }
+                } else {
+                    appendAgentMessage("Unknown mode. Use 'creative' or 'survival'.");
+                }
+            } else {
+                appendAgentMessage("Usage: mode <creative|survival>");
+            }
+            break;
+        case 'give':
+            if (args.length > 1) {
+                let count = 1;
+                // Check if last arg is a number
+                if (!isNaN(parseInt(args[args.length - 1]))) {
+                    count = parseInt(args.pop());
+                }
+                const itemName = args.slice(1).join(' '); // Rejoin the rest as item name
+                
+                // Capitalize first letter of each word to try to match item names
+                const formattedName = itemName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                
+                state.addResource(formattedName, count);
+                appendAgentMessage(`Synthesized ${count}x ${formattedName}. Check your inventory.`);
+            } else {
+                appendAgentMessage("Usage: give <item> [amount]");
+            }
+            break;
+        default:
+            appendAgentMessage(`Command not recognized: '${command}'. Type 'help' for a list of commands.`);
+            break;
+    }
+}
+
+agentInput.addEventListener('keydown', (e) => {
+    if (e.code === 'Enter') {
+        parseAgentCommand(agentInput.value);
+        agentInput.value = '';
+    }
+});
+
 // Search filters real Minecraft items only
 accessorySearch.addEventListener('input', () => {
     const query = accessorySearch.value.trim().toLowerCase();
@@ -471,9 +609,19 @@ const onKeyDown = (event) => {
         if (event.code === 'Enter') accessoryGetBtn.click();
         return;
     }
+    
+    if (document.activeElement === agentInput) {
+        if (event.code === 'Escape') toggleAgentConsole();
+        return;
+    }
 
     switch (event.code) {
         case 'KeyW': toggleAccessoriesMenu(); break;
+        case 'KeyT': 
+        case 'Slash':
+            event.preventDefault(); // Prevent '/' from typing immediately in the input
+            toggleAgentConsole(); 
+            break;
         case 'ArrowUp': moveForward = true; break;
         case 'ArrowDown': moveBackward = true; break;
         case 'ArrowLeft': moveLeft = true; break;
