@@ -4,7 +4,7 @@ class OpenAIService {
     constructor() {
         this.client = null;
         this.apiKey = null;
-        this.model = 'gpt-4o'; // default
+        this.model = 'gpt-5.5'; // default
         this.temperature = 0.7;
         this.history = [];
         this.systemPrompt = `You are an AI companion in a Minecraft-inspired survival and building game called "Mine Build Defeat". 
