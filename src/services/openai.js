@@ -17,7 +17,7 @@ You do NOT execute commands yourself in this interface, you just provide text re
      * Initialize or update the OpenAI client.
      */
     init(apiKey, model, temperature) {
-        this.apiKey = apiKey || this.apiKey;
+        this.apiKey = apiKey || import.meta.env.VITE_OPENAI_API_KEY;
         this.model = model || this.model;
         this.temperature = temperature !== undefined ? temperature : this.temperature;
 

@@ -1,0 +1,18 @@
+{
+  "name": "mine_build_defeat",
+  "version": "1.0.0",
+  "description": "A Minecraft-inspired survival and building game built with Three.js.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "openai": "^4.0.0",
+    "three": "0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
