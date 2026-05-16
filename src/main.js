@@ -4,6 +4,7 @@ import { state } from './state.js';
 import { VoxelWorld } from './world.js';
 import { Boss } from './boss.js';
 import { Monster } from './monster.js';
+import { openAIService } from './services/openai.js';
 
 // --- CONFIG ---
 const MOVE_SPEED = 10.0;
@@ -232,7 +233,47 @@ const closeAgentBtn = document.getElementById('close-agent-btn');
 const agentInput = document.getElementById('agent-input');
 const agentHistory = document.getElementById('agent-history');
 
+// Settings UI
+const agentSettingsBtn = document.getElementById('agent-settings-btn');
+const agentSettingsPanel = document.getElementById('agent-settings-panel');
+const openaiApiKeyInput = document.getElementById('openai-api-key');
+const openaiModelSelect = document.getElementById('openai-model');
+const openaiTempInput = document.getElementById('openai-temp');
+const openaiSaveBtn = document.getElementById('openai-save-btn');
+const agentStatusIndicator = document.getElementById('agent-status-indicator');
+
 var isAgentConsoleOpen = false;
+var isSettingsOpen = false;
+
+// Initialize OpenAI on load if ENV var is present
+if (openAIService.init()) {
+    agentStatusIndicator.classList.add('connected');
+    agentStatusIndicator.title = "Connected to ChatGPT";
+}
+
+agentSettingsBtn.addEventListener('click', () => {
+    isSettingsOpen = !isSettingsOpen;
+    agentSettingsPanel.style.display = isSettingsOpen ? 'block' : 'none';
+});
+
+openaiSaveBtn.addEventListener('click', () => {
+    const key = openaiApiKeyInput.value.trim();
+    const model = openaiModelSelect.value;
+    const temp = parseFloat(openaiTempInput.value);
+    
+    const connected = openAIService.init(key, model, temp);
+    if (connected) {
+        agentStatusIndicator.classList.add('connected');
+        agentStatusIndicator.title = "Connected to ChatGPT";
+        isSettingsOpen = false;
+        agentSettingsPanel.style.display = 'none';
+        appendAgentMessage("ChatGPT integration connected and ready.", false);
+    } else {
+        agentStatusIndicator.classList.remove('connected');
+        agentStatusIndicator.title = "Disconnected from ChatGPT";
+        appendAgentMessage("Error connecting to ChatGPT. Please check your API key.", false);
+    }
+});
 
 function toggleAgentConsole() {
     isAgentConsoleOpen = !isAgentConsoleOpen;
@@ -268,7 +309,26 @@ function appendAgentMessage(text, isPlayer = false) {
     agentHistory.scrollTop = agentHistory.scrollHeight; // Auto-scroll
 }
 
-function parseAgentCommand(cmdString) {
+function createAgentStreamMessage(isPlayer = false) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = isPlayer ? 'agent-msg player-msg' : 'agent-msg';
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.className = isPlayer ? 'player-name' : 'agent-name';
+    nameSpan.textContent = isPlayer ? 'You:' : 'Agent:';
+    
+    const textNode = document.createTextNode(' ');
+    
+    msgDiv.appendChild(nameSpan);
+    msgDiv.appendChild(textNode);
+    
+    agentHistory.appendChild(msgDiv);
+    agentHistory.scrollTop = agentHistory.scrollHeight;
+    
+    return textNode;
+}
+
+async function parseAgentCommand(cmdString) {
     const args = cmdString.trim().split(/\s+/);
     if (args.length === 0 || args[0] === '') return;
     
@@ -352,7 +412,15 @@ function parseAgentCommand(cmdString) {
             }
             break;
         default:
-            appendAgentMessage(`Command not recognized: '${command}'. Type 'help' for a list of commands.`);
+            if (openAIService.isConnected()) {
+                const textNode = createAgentStreamMessage(false);
+                for await (const chunk of openAIService.streamMessage(cmdString)) {
+                    textNode.nodeValue += chunk;
+                    agentHistory.scrollTop = agentHistory.scrollHeight;
+                }
+            } else {
+                appendAgentMessage(`Command not recognized: '${command}'. Type 'help' for commands, or configure ChatGPT Settings to chat.`);
+            }
             break;
     }
 }
