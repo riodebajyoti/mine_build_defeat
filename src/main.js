@@ -4,6 +4,7 @@ import { state } from './state.js';
 import { VoxelWorld } from './world.js';
 import { Boss } from './boss.js';
 import { Monster } from './monster.js';
+import { Animal } from './animal.js';
 import { openAIService } from './services/openai.js';
 
 // --- CONFIG ---
@@ -133,7 +134,47 @@ const boss = new Boss(scene, camera);
 let bossSpawned = false;
 let monsters = [];
 let nextMonsterSpawn = 10;
+let animals = [];
+let nextAnimalSpawn = 10;
 let gameMode = 'creative';
+
+// Game Rules State
+let worldTime = 'MORNING';
+let timeCycleTimer = 0;
+let enableMonstersSpawning = false;
+let enableAnimalsSpawning = true;
+let gravityEnabled = true;
+
+function initGameRules(mode) {
+    worldTime = 'MORNING';
+    timeCycleTimer = 0;
+    gravityEnabled = true;
+    updateLighting();
+    
+    if (mode === 'survival') {
+        enableAnimalsSpawning = true;
+        enableMonstersSpawning = false;
+    } else if (mode === 'creative') {
+        enableAnimalsSpawning = true;
+        enableMonstersSpawning = false;
+    }
+}
+
+function updateLighting() {
+    if (worldTime === 'MORNING') {
+        ambientLight.intensity = 1.5;
+        scene.background.setHex(0x87CEEB); // Sky blue
+        scene.fog.color.setHex(0x87CEEB);
+        sunLight.intensity = 2.0;
+    } else {
+        ambientLight.intensity = 0.4;
+        scene.background.setHex(0x0a0a1a); // Night sky
+        scene.fog.color.setHex(0x0a0a1a);
+        sunLight.intensity = 0.2;
+    }
+}
+// Init rules on start
+initGameRules(gameMode);
 
 // --- CONTROLS ---
 // Use renderer.domElement for PointerLock target and add safe guards
@@ -151,6 +192,8 @@ modeTabs.forEach(tab => {
         modeTabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         gameMode = tab.dataset.mode;
+        
+        initGameRules(gameMode);
         
         if (gameMode === 'creative') {
             creativeInfo.style.display = 'block';
@@ -799,7 +842,13 @@ function animate() {
         // Physics & Movement
         velocity.x -= velocity.x * 10.0 * delta;
         velocity.z -= velocity.z * 10.0 * delta;
-        velocity.y -= GRAVITY * delta;
+        if (gravityEnabled) {
+            velocity.y -= GRAVITY * delta;
+        } else {
+            // SLOW_FALL effect
+            velocity.y -= (GRAVITY * 0.1) * delta;
+            if (velocity.y < -2.0) velocity.y = -2.0;
+        }
 
         direction.z = Number(moveForward) - Number(moveBackward);
         direction.x = Number(moveRight) - Number(moveLeft);
@@ -828,6 +877,17 @@ function animate() {
             velocity.y = 0;
             camera.position.y = groundY;
             canJump = true;
+        }
+        
+        // HOLE_ZONE logic
+        if (camera.position.y < -10 && gravityEnabled) {
+            gravityEnabled = false;
+            worldTime = 'NIGHT';
+            updateLighting();
+            state.showHelperMsg("Entered the HOLE_ZONE. Gravity disabled. Night descends...");
+        } else if (camera.position.y >= -10 && !gravityEnabled) {
+            gravityEnabled = true;
+            state.showHelperMsg("Exited the HOLE_ZONE. Gravity restored.");
         }
 
         // Hand Animations
@@ -878,19 +938,53 @@ function animate() {
 
         world.update(delta, camera.position);
         
+        // Time Cycle Logic
+        if (camera.position.y >= -10) { // Don't process time cycles while in HOLE_ZONE
+            timeCycleTimer += delta;
+            if (timeCycleTimer >= 60) {
+                if (gameMode === 'survival' && worldTime === 'MORNING') {
+                    // ON_TIMER_COMPLETE (60 seconds)
+                    worldTime = 'NIGHT';
+                    enableAnimalsSpawning = false;
+                    enableMonstersSpawning = true;
+                    updateLighting();
+                    state.showHelperMsg("Night has fallen. Monsters are emerging.");
+                } else if (gameMode === 'creative') {
+                    // EVERY 60 seconds: TOGGLE world.time
+                    worldTime = worldTime === 'MORNING' ? 'NIGHT' : 'MORNING';
+                    updateLighting();
+                    state.showHelperMsg(worldTime === 'MORNING' ? "Morning breaks." : "Night falls.");
+                }
+                timeCycleTimer = 0; 
+            }
+        }
+        
         if (gameMode === 'survival') {
             boss.update(delta);
-            
-            // Periodically spawn monsters
+        }
+        
+        // Spawning Logic
+        if (enableMonstersSpawning) {
             nextMonsterSpawn -= delta;
             if (nextMonsterSpawn <= 0 && monsters.length < 15) {
                 monsters.push(new Monster(scene));
                 nextMonsterSpawn = 5 + Math.random() * 8;
             }
-            
-            monsters.forEach(m => m.update(delta, camera.position, world));
-            monsters = monsters.filter(m => m.active);
         }
+        
+        if (enableAnimalsSpawning) {
+            nextAnimalSpawn -= delta;
+            if (nextAnimalSpawn <= 0 && animals.length < 10) {
+                animals.push(new Animal(scene));
+                nextAnimalSpawn = 8 + Math.random() * 10;
+            }
+        }
+        
+        monsters.forEach(m => m.update(delta, camera.position, world));
+        monsters = monsters.filter(m => m.active);
+        
+        animals.forEach(a => a.update(delta, camera.position, world));
+        animals = animals.filter(a => a.active);
     }
 
     renderer.render(scene, camera);
