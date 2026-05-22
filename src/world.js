@@ -15,6 +15,8 @@ export class VoxelWorld {
             'Stone': new THREE.MeshStandardMaterial({ color: 0x808080, roughness: 0.5 }),
             'Grass': new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.8 }),
             'Steel': new THREE.MeshStandardMaterial({ color: 0x707070, metalness: 0.8, roughness: 0.2 }),
+            'Wood': new THREE.MeshStandardMaterial({ color: 0x5C4033, roughness: 0.9 }),
+            'Leaves': new THREE.MeshStandardMaterial({ color: 0x2E8B57, roughness: 0.9 }),
         };
 
         this.geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -47,6 +49,69 @@ export class VoxelWorld {
                     const key = `${worldX},${y},${worldZ}`;
                     this.blocks.set(key, type);
                     chunk.blocks.set(key, type);
+                }
+
+                // Tree generation with 1.5% chance per column on grass
+                if (Math.random() < 0.015) {
+                    const trunkHeight = 4 + Math.floor(Math.random() * 2);
+                    
+                    // Place trunk (Wood)
+                    for (let ty = height; ty < height + trunkHeight; ty++) {
+                        const key = `${worldX},${ty},${worldZ}`;
+                        this.blocks.set(key, 'Wood');
+                        chunk.blocks.set(key, 'Wood');
+                    }
+                    
+                    // Place leaves around the trunk
+                    const leafTop = height + trunkHeight;
+                    
+                    // Bottom layers of leaves (leafTop - 2, leafTop - 1): 3x3 square
+                    for (let ly = leafTop - 2; ly <= leafTop - 1; ly++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            for (let dz = -1; dz <= 1; dz++) {
+                                if (dx === 0 && dz === 0) continue; // Skip the trunk itself
+                                const lx = worldX + dx;
+                                const lz = worldZ + dz;
+                                // Clip to current chunk boundaries
+                                if (Math.floor(lx / this.chunkSize) === cx && Math.floor(lz / this.chunkSize) === cz) {
+                                    const key = `${lx},${ly},${lz}`;
+                                    if (!chunk.blocks.has(key)) {
+                                        this.blocks.set(key, 'Leaves');
+                                        chunk.blocks.set(key, 'Leaves');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Middle layer of leaves (leafTop): cross shape
+                    const crossOffsets = [
+                        {x: 0, z: 0},
+                        {x: 1, z: 0},
+                        {x: -1, z: 0},
+                        {x: 0, z: 1},
+                        {x: 0, z: -1}
+                    ];
+                    crossOffsets.forEach(offset => {
+                        const lx = worldX + offset.x;
+                        const lz = worldZ + offset.z;
+                        if (Math.floor(lx / this.chunkSize) === cx && Math.floor(lz / this.chunkSize) === cz) {
+                            const key = `${lx},${leafTop},${lz}`;
+                            if (!chunk.blocks.has(key)) {
+                                this.blocks.set(key, 'Leaves');
+                                chunk.blocks.set(key, 'Leaves');
+                            }
+                        }
+                    });
+                    
+                    // Top layer of leaves (leafTop + 1): single block
+                    if (Math.floor(worldX / this.chunkSize) === cx && Math.floor(worldZ / this.chunkSize) === cz) {
+                        const key = `${worldX},${leafTop + 1},${worldZ}`;
+                        if (!chunk.blocks.has(key)) {
+                            this.blocks.set(key, 'Leaves');
+                            chunk.blocks.set(key, 'Leaves');
+                        }
+                    }
                 }
             }
         }
