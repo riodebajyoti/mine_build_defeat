@@ -7,7 +7,7 @@ export class VoxelWorld {
         this.chunkSize = 16;
         this.blockSize = 1;
         this.blocks = new Map(); // key: "x,y,z", value: type
-        this.instancedMeshes = {}; // type -> THREE.InstancedMesh
+        this.chunks = new Map(); // key: "cx,cz", value: Chunk object
 
         // Materials
         this.materials = {
@@ -21,6 +21,19 @@ export class VoxelWorld {
     }
 
     generateChunk(cx, cz) {
+        const chunkKey = `${cx},${cz}`;
+        if (this.chunks.has(chunkKey)) return;
+
+        const chunk = {
+            cx: cx,
+            cz: cz,
+            group: new THREE.Group(),
+            blocks: new Map(),
+            instancedMeshes: {}
+        };
+        this.chunks.set(chunkKey, chunk);
+        this.scene.add(chunk.group);
+
         for (let x = 0; x < this.chunkSize; x++) {
             for (let z = 0; z < this.chunkSize; z++) {
                 const worldX = cx * this.chunkSize + x;
@@ -31,29 +44,54 @@ export class VoxelWorld {
 
                 for (let y = -15; y < height; y++) {
                     const type = y === height - 1 ? 'Grass' : (y > height - 4 ? 'Dirt' : 'Stone');
-                    this.setBlock(worldX, y, worldZ, type);
+                    const key = `${worldX},${y},${worldZ}`;
+                    this.blocks.set(key, type);
+                    chunk.blocks.set(key, type);
                 }
             }
         }
-        this.updateMesh();
+        this.updateChunkMesh(cx, cz);
     }
 
     setBlock(x, y, z, type) {
         const key = `${x},${y},${z}`;
+        const cx = Math.floor(x / this.chunkSize);
+        const cz = Math.floor(z / this.chunkSize);
+        const chunkKey = `${cx},${cz}`;
+
+        let chunk = this.chunks.get(chunkKey);
+        if (!chunk) {
+            chunk = {
+                cx: cx,
+                cz: cz,
+                group: new THREE.Group(),
+                blocks: new Map(),
+                instancedMeshes: {}
+            };
+            this.chunks.set(chunkKey, chunk);
+            this.scene.add(chunk.group);
+        }
+
         if (type === null) {
             this.blocks.delete(key);
+            chunk.blocks.delete(key);
         } else {
             this.blocks.set(key, type);
+            chunk.blocks.set(key, type);
         }
     }
 
-    updateMesh() {
+    updateChunkMesh(cx, cz) {
+        const chunkKey = `${cx},${cz}`;
+        const chunk = this.chunks.get(chunkKey);
+        if (!chunk) return;
+
         // Clear existing meshes
-        Object.values(this.instancedMeshes).forEach(m => this.scene.remove(m));
-        this.instancedMeshes = {};
+        Object.values(chunk.instancedMeshes).forEach(m => chunk.group.remove(m));
+        chunk.instancedMeshes = {};
 
         const typeCounts = {};
-        this.blocks.forEach((type) => {
+        chunk.blocks.forEach((type) => {
             typeCounts[type] = (typeCounts[type] || 0) + 1;
         });
 
@@ -76,20 +114,24 @@ export class VoxelWorld {
 
             let i = 0;
             const matrix = new THREE.Matrix4();
-            this.blocks.forEach((val, key) => {
+            chunk.blocks.forEach((val, key) => {
                 if (val !== type) return;
                 const [x, y, z] = key.split(',').map(Number);
                 matrix.setPosition(x, y, z);
                 mesh.setMatrixAt(i++, matrix);
             });
 
-            this.instancedMeshes[type] = mesh;
-            this.scene.add(mesh);
+            chunk.instancedMeshes[type] = mesh;
+            chunk.group.add(mesh);
         });
     }
 
     getSurfaceObjects() {
-        return Object.values(this.instancedMeshes);
+        const objects = [];
+        this.chunks.forEach(chunk => {
+            objects.push(...Object.values(chunk.instancedMeshes));
+        });
+        return objects;
     }
 
     mineBlock(mesh, intersectionPoint, normal) {
@@ -102,7 +144,9 @@ export class VoxelWorld {
         if (type) {
             state.addResource(type === 'Grass' ? 'Dirt' : type, 1);
             this.setBlock(x, y, z, null);
-            this.updateMesh();
+            const cx = Math.floor(x / this.chunkSize);
+            const cz = Math.floor(z / this.chunkSize);
+            this.updateChunkMesh(cx, cz);
             this.playEffect(x, y, z);
         }
     }
@@ -118,7 +162,9 @@ export class VoxelWorld {
             this.setBlock(x, y, z, currentItem.name === 'Dirt' ? 'Grass' : currentItem.name); // Simple map
             currentItem.count--;
             state.notify();
-            this.updateMesh();
+            const cx = Math.floor(x / this.chunkSize);
+            const cz = Math.floor(z / this.chunkSize);
+            this.updateChunkMesh(cx, cz);
         } else {
             state.showHelperMsg("No blocks to build with!");
         }
@@ -129,6 +175,51 @@ export class VoxelWorld {
     }
 
     update(delta, playerPos) {
-        // Dynamic loading could happen here
+        if (!playerPos) return;
+
+        const px = Math.floor(playerPos.x / this.chunkSize);
+        const pz = Math.floor(playerPos.z / this.chunkSize);
+        const viewDistance = 4;
+
+        // 1. Identify chunks to load
+        const chunksToLoad = [];
+        for (let dx = -viewDistance; dx <= viewDistance; dx++) {
+            for (let dz = -viewDistance; dz <= viewDistance; dz++) {
+                const cx = px + dx;
+                const cz = pz + dz;
+                const key = `${cx},${cz}`;
+                if (!this.chunks.has(key)) {
+                    const distSq = dx * dx + dz * dz;
+                    chunksToLoad.push({ cx, cz, distSq });
+                }
+            }
+        }
+
+        // Sort so closest chunks load first
+        chunksToLoad.sort((a, b) => a.distSq - b.distSq);
+
+        // Load at most one chunk per frame
+        if (chunksToLoad.length > 0) {
+            const { cx, cz } = chunksToLoad[0];
+            this.generateChunk(cx, cz);
+        }
+
+        // 2. Unload chunks that are too far away
+        const unloadDistance = viewDistance + 2;
+        this.chunks.forEach((chunk, key) => {
+            const dx = chunk.cx - px;
+            const dz = chunk.cz - pz;
+            if (Math.abs(dx) > unloadDistance || Math.abs(dz) > unloadDistance) {
+                // Remove chunk group from scene
+                this.scene.remove(chunk.group);
+
+                // Clear block entries from this.blocks
+                chunk.blocks.forEach((type, blockKey) => {
+                    this.blocks.delete(blockKey);
+                });
+
+                this.chunks.delete(key);
+            }
+        });
     }
 }

@@ -51,6 +51,13 @@ export class Boss {
 
     activate() {
         this.active = true;
+        // Position the boss 20 units away from the player
+        const angle = Math.random() * Math.PI * 2;
+        this.group.position.set(
+            this.playerCamera.position.x + Math.cos(angle) * 20,
+            this.playerCamera.position.y + 5,
+            this.playerCamera.position.z + Math.sin(angle) * 20
+        );
         state.showHelperMsg("WARNING: ios-2 has detected your presence!");
     }
 

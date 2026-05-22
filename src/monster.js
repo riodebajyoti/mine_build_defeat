@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export class Monster {
-    constructor(scene) {
+    constructor(scene, playerPos = new THREE.Vector3()) {
         this.scene = scene;
         this.group = new THREE.Group();
 
@@ -27,13 +27,13 @@ export class Monster {
         this.group.add(body, head, leftEye, rightEye);
         this.scene.add(this.group);
 
-        // Random spawn far away
+        // Random spawn far away relative to player
         const spawnAngle = Math.random() * Math.PI * 2;
         const spawnRadius = 20 + Math.random() * 20;
         this.group.position.set(
-            Math.cos(spawnAngle) * spawnRadius,
-            20,
-            Math.sin(spawnAngle) * spawnRadius
+            playerPos.x + Math.cos(spawnAngle) * spawnRadius,
+            playerPos.y + 15,
+            playerPos.z + Math.sin(spawnAngle) * spawnRadius
         );
 
         this.speed = 2.5 + Math.random() * 2; // Random speed

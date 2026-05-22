@@ -126,7 +126,12 @@ scene.add(sunLight);
 
 // --- VOXEL WORLD ---
 const world = new VoxelWorld(scene);
-world.generateChunk(0, 0);
+// Pre-generate a 3x3 grid around player to ensure stable collision on start
+for (let cx = -1; cx <= 1; cx++) {
+    for (let cz = -1; cz <= 1; cz++) {
+        world.generateChunk(cx, cz);
+    }
+}
 updateHandModel(); // Initialize hand now that we have state/world
 
 // --- ENEMY SYSTEM ---
@@ -967,7 +972,7 @@ function animate() {
         if (enableMonstersSpawning) {
             nextMonsterSpawn -= delta;
             if (nextMonsterSpawn <= 0 && monsters.length < 15) {
-                monsters.push(new Monster(scene));
+                monsters.push(new Monster(scene, camera.position));
                 nextMonsterSpawn = 5 + Math.random() * 8;
             }
         }
@@ -975,16 +980,32 @@ function animate() {
         if (enableAnimalsSpawning) {
             nextAnimalSpawn -= delta;
             if (nextAnimalSpawn <= 0 && animals.length < 10) {
-                animals.push(new Animal(scene));
+                animals.push(new Animal(scene, camera.position));
                 nextAnimalSpawn = 8 + Math.random() * 10;
             }
         }
         
         monsters.forEach(m => m.update(delta, camera.position, world));
-        monsters = monsters.filter(m => m.active);
+        monsters = monsters.filter(m => {
+            if (!m.active) return false;
+            // Prune monsters that are too far away
+            if (m.group.position.distanceTo(camera.position) > 80) {
+                m.die();
+                return false;
+            }
+            return true;
+        });
         
         animals.forEach(a => a.update(delta, camera.position, world));
-        animals = animals.filter(a => a.active);
+        animals = animals.filter(a => {
+            if (!a.active) return false;
+            // Prune animals that are too far away
+            if (a.group.position.distanceTo(camera.position) > 80) {
+                a.die();
+                return false;
+            }
+            return true;
+        });
     }
 
     renderer.render(scene, camera);
