@@ -801,6 +801,19 @@ document.addEventListener('mousedown', (event) => {
         }
     }
 
+    // Check Animals Hit
+    if (event.button === 0) {
+        for (const animal of animals) {
+            if (animal.active) {
+                const attackIntersects = raycaster.intersectObject(animal.group, true);
+                if (attackIntersects.length > 0) {
+                    animal.takeDamage(10);
+                    return;
+                }
+            }
+        }
+    }
+
     const currentItem = state.inventory[state.selectedSlot];
     const baseBlocks = ['Dirt', 'Stone', 'Wood', 'Steel', 'Cores', 'Grass'];
     const isAccessory = currentItem && !baseBlocks.includes(currentItem.name) && currentItem.count > 0;

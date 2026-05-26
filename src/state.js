@@ -26,7 +26,7 @@ export const state = {
         if (!list) return;
         list.innerHTML = '';
         const EMOJI_MAP = {
-            'Dirt':'🟫','Stone':'⬜','Wood':'🪵','Steel':'⚙️','Cores':'🔵','Grass':'🟩',
+            'Dirt':'🟫','Stone':'⬜','Wood':'🪵','Steel':'⚙️','Cores':'🔵','Grass':'🟩','Meat':'🥩',
             'Wood Sword':'🗡️','Stone Sword':'⚔️','Iron Sword':'🔪','Diamond Sword':'💎',
             'Gold Sword':'✨','Netherite Sword':'🔥','Bow':'🏹','Crossbow':'🎯',
             'Trident':'🔱','Shield':'🛡️','Arrow':'➡️','Wood Pickaxe':'⛏️',

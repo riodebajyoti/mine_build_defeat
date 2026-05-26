@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { state } from './state.js';
 
 export class Animal {
     constructor(scene, playerPos = new THREE.Vector3()) {
@@ -56,13 +57,16 @@ export class Animal {
         this.speed = 4.0;
         
         if (this.hp <= 0) {
-            this.die();
+            this.die(true);
         }
     }
 
-    die() {
+    die(killedByPlayer = false) {
         this.active = false;
         this.scene.remove(this.group);
+        if (killedByPlayer) {
+            state.addResource('Meat', 1);
+        }
     }
 
     update(delta, playerPos, world) {
