@@ -82,8 +82,15 @@ export class VoxelWorld {
                     chunk.blocks.set(key, type);
                 }
 
-                // Tree generation with 1.5% chance per column on grass (avoid steep mountain sides)
-                if (Math.random() < 0.015 && distToMountain > 20) {
+                // Tree generation with 1.5% chance per column on grass
+                // Trees spawn on regular terrain AND on mountain slopes (but not the very peak)
+                if (Math.random() < 0.015 && height > 2) {
+                    // Don't spawn trees on very steep peaks (height > 20)
+                    if (distToMountain < 25 && height > 20) {
+                        // Skip very high snow peaks
+                        continue;
+                    }
+                    
                     const trunkHeight = 4 + Math.floor(Math.random() * 2);
                     
                     // Place trunk (Wood)
