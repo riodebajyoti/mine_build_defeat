@@ -11,6 +11,7 @@ import { openAIService } from './services/openai.js';
 const MOVE_SPEED = 10.0;
 const JUMP_FORCE = 5.0;
 const GRAVITY = 15.0;
+const FLY_SPEED = 15.0;
 
 // --- ENGINE SETUP ---
 const scene = new THREE.Scene();
@@ -149,11 +150,13 @@ let timeCycleTimer = 0;
 let enableMonstersSpawning = false;
 let enableAnimalsSpawning = true;
 let gravityEnabled = true;
+let flyMode = false;
 
 function initGameRules(mode) {
     worldTime = 'MORNING';
     timeCycleTimer = 0;
     gravityEnabled = true;
+    flyMode = false;
     updateLighting();
     
     if (mode === 'survival') {
@@ -386,13 +389,32 @@ async function parseAgentCommand(cmdString) {
     
     switch (command) {
         case 'help':
-            appendAgentMessage("Available commands: 'give <item> [amount]', 'mode <creative|survival>', 'heal', 'help'.");
+            appendAgentMessage("Available commands: 'give <item> [amount]', 'mode <creative|survival>', 'heal', 'start fly', 'end fly', 'help'.");
             break;
         case 'heal':
             state.setHP(100);
             state.energy = 100; // Directly setting energy if setEnergy isn't exposed
             state.notify();
             appendAgentMessage("Vitals restored to 100%. Keep fighting, Captain!");
+            break;
+        case 'start':
+            if (args.length > 1 && args[1].toLowerCase() === 'fly') {
+                flyMode = true;
+                gravityEnabled = false;
+                appendAgentMessage("Flight mode activated! Use arrow keys to move in all directions.");
+            } else {
+                appendAgentMessage("Usage: start fly");
+            }
+            break;
+        case 'end':
+            if (args.length > 1 && args[1].toLowerCase() === 'fly') {
+                flyMode = false;
+                gravityEnabled = true;
+                velocity.y = 0;
+                appendAgentMessage("Flight mode deactivated. Welcome back to the ground, Captain.");
+            } else {
+                appendAgentMessage("Usage: end fly");
+            }
             break;
         case 'kill':
             if (args.length > 1) {
@@ -716,6 +738,8 @@ let moveForward = false;
 let moveBackward = false;
 let moveLeft = false;
 let moveRight = false;
+let moveUp = false;
+let moveDown = false;
 let canJump = false;
 let velocity = new THREE.Vector3();
 let direction = new THREE.Vector3();
@@ -742,7 +766,18 @@ const onKeyDown = (event) => {
         case 'ArrowDown': moveBackward = true; break;
         case 'ArrowLeft': moveLeft = true; break;
         case 'ArrowRight': moveRight = true; break;
-        case 'Space': if (canJump === true) velocity.y += JUMP_FORCE; canJump = false; break;
+        case 'Space': 
+            if (flyMode) {
+                moveUp = true;
+            } else if (canJump === true) {
+                velocity.y += JUMP_FORCE;
+                canJump = false;
+            }
+            break;
+        case 'ShiftLeft':
+        case 'ShiftRight':
+            if (flyMode) moveDown = true;
+            break;
         case 'Digit1': state.setSelected(0); break;
         case 'Digit2': state.setSelected(1); break;
         case 'Digit3': state.setSelected(2); break;
@@ -758,6 +793,11 @@ const onKeyUp = (event) => {
         case 'ArrowDown': moveBackward = false; break;
         case 'ArrowLeft': moveLeft = false; break;
         case 'ArrowRight': moveRight = false; break;
+        case 'Space': moveUp = false; break;
+        case 'ShiftLeft':
+        case 'ShiftRight':
+            moveDown = false;
+            break;
     }
 };
 
@@ -858,54 +898,75 @@ function animate() {
 
     if (state.isPointerLocked) {
         // Physics & Movement
-        velocity.x -= velocity.x * 10.0 * delta;
-        velocity.z -= velocity.z * 10.0 * delta;
-        if (gravityEnabled) {
-            velocity.y -= GRAVITY * delta;
-        } else {
-            // SLOW_FALL effect
-            velocity.y -= (GRAVITY * 0.1) * delta;
-            if (velocity.y < -2.0) velocity.y = -2.0;
-        }
-
-        direction.z = Number(moveForward) - Number(moveBackward);
-        direction.x = Number(moveRight) - Number(moveLeft);
-        direction.normalize();
-
-        if (moveForward || moveBackward) velocity.z -= direction.z * MOVE_SPEED * 10.0 * delta;
-        if (moveLeft || moveRight) velocity.x -= direction.x * MOVE_SPEED * 10.0 * delta;
-
-        controls.moveRight(-velocity.x * delta);
-        controls.moveForward(-velocity.z * delta);
-
-        camera.position.y += (velocity.y * delta);
-
-        // Ground Collision (Simple dynamic)
-        const currentX = Math.round(camera.position.x);
-        const currentZ = Math.round(camera.position.z);
-        let groundY = 0; // Default floor
-        for (let y = 15; y >= -5; y--) {
-            if (world.blocks.has(`${currentX},${y},${currentZ}`)) {
-                groundY = y + 1.5; // Player height above block
-                break;
-            }
-        }
-
-        if (camera.position.y < groundY) {
+        if (flyMode) {
+            // Flight mode - no gravity, direct movement control
+            velocity.x = 0;
+            velocity.z = 0;
             velocity.y = 0;
-            camera.position.y = groundY;
-            canJump = true;
-        }
-        
-        // HOLE_ZONE logic
-        if (camera.position.y < -10 && gravityEnabled) {
-            gravityEnabled = false;
-            worldTime = 'NIGHT';
-            updateLighting();
-            state.showHelperMsg("Entered the HOLE_ZONE. Gravity disabled. Night descends...");
-        } else if (camera.position.y >= -10 && !gravityEnabled) {
-            gravityEnabled = true;
-            state.showHelperMsg("Exited the HOLE_ZONE. Gravity restored.");
+            
+            direction.z = Number(moveForward) - Number(moveBackward);
+            direction.x = Number(moveRight) - Number(moveLeft);
+            direction.y = Number(moveUp) - Number(moveDown);
+            direction.normalize();
+
+            if (moveForward || moveBackward) velocity.z -= direction.z * FLY_SPEED * delta;
+            if (moveLeft || moveRight) velocity.x -= direction.x * FLY_SPEED * delta;
+            if (moveUp || moveDown) velocity.y += direction.y * FLY_SPEED * delta;
+
+            controls.moveRight(-velocity.x * delta);
+            controls.moveForward(-velocity.z * delta);
+            camera.position.y += (velocity.y * delta);
+        } else {
+            // Normal walking mode
+            velocity.x -= velocity.x * 10.0 * delta;
+            velocity.z -= velocity.z * 10.0 * delta;
+            if (gravityEnabled) {
+                velocity.y -= GRAVITY * delta;
+            } else {
+                // SLOW_FALL effect
+                velocity.y -= (GRAVITY * 0.1) * delta;
+                if (velocity.y < -2.0) velocity.y = -2.0;
+            }
+
+            direction.z = Number(moveForward) - Number(moveBackward);
+            direction.x = Number(moveRight) - Number(moveLeft);
+            direction.normalize();
+
+            if (moveForward || moveBackward) velocity.z -= direction.z * MOVE_SPEED * 10.0 * delta;
+            if (moveLeft || moveRight) velocity.x -= direction.x * MOVE_SPEED * 10.0 * delta;
+
+            controls.moveRight(-velocity.x * delta);
+            controls.moveForward(-velocity.z * delta);
+
+            camera.position.y += (velocity.y * delta);
+
+            // Ground Collision (Simple dynamic)
+            const currentX = Math.round(camera.position.x);
+            const currentZ = Math.round(camera.position.z);
+            let groundY = 0; // Default floor
+            for (let y = 15; y >= -5; y--) {
+                if (world.blocks.has(`${currentX},${y},${currentZ}`)) {
+                    groundY = y + 1.5; // Player height above block
+                    break;
+                }
+            }
+
+            if (camera.position.y < groundY) {
+                velocity.y = 0;
+                camera.position.y = groundY;
+                canJump = true;
+            }
+            
+            // HOLE_ZONE logic
+            if (camera.position.y < -10 && gravityEnabled) {
+                gravityEnabled = false;
+                worldTime = 'NIGHT';
+                updateLighting();
+                state.showHelperMsg("Entered the HOLE_ZONE. Gravity disabled. Night descends...");
+            } else if (camera.position.y >= -10 && !gravityEnabled) {
+                gravityEnabled = true;
+                state.showHelperMsg("Exited the HOLE_ZONE. Gravity restored.");
+            }
         }
 
         // Hand Animations
@@ -927,7 +988,7 @@ function animate() {
             }
         } else {
             const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
-            if (speed > 0.1 && canJump) {
+            if (speed > 0.1 && canJump && !flyMode) {
                 bobTime += delta * 12;
                 handGroup.position.y = -0.4 + Math.sin(bobTime) * 0.05;
                 handGroup.position.x = 0.5 + Math.cos(bobTime * 0.5) * 0.02;
