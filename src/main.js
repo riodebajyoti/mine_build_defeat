@@ -923,8 +923,11 @@ function animate() {
             const flyDir = new THREE.Vector3();
             
             // Get local forward and right vectors of the camera in world space
-            const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-            const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+            const camDir = new THREE.Vector3();
+            camera.getWorldDirection(camDir);
+            
+            const camRight = new THREE.Vector3();
+            camRight.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
 
             // Accumulate directions based on camera orientation
             if (moveForward) flyDir.add(camDir);
