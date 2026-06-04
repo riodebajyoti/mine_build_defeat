@@ -922,10 +922,20 @@ function animate() {
             // Flight mode - no gravity, direct movement control with collision
             const flyDir = new THREE.Vector3();
             
-            // Corrected axis mapping for flight mode
-            flyDir.z = Number(moveBackward) - Number(moveForward);  // Back/Forward
-            flyDir.x = Number(moveLeft) - Number(moveRight);        // Left/Right
-            flyDir.y = Number(moveUp) - Number(moveDown);
+            // Get local forward and right vectors of the camera in world space
+            const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+
+            // Accumulate directions based on camera orientation
+            if (moveForward) flyDir.add(camDir);
+            if (moveBackward) flyDir.sub(camDir);
+            if (moveRight) flyDir.add(camRight);
+            if (moveLeft) flyDir.sub(camRight);
+            
+            // Space/Shift go straight up/down along world Y axis
+            if (moveUp) flyDir.y += 1.0;
+            if (moveDown) flyDir.y -= 1.0;
+
             flyDir.normalize();
 
             // Calculate new position
