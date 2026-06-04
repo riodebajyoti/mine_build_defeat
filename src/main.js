@@ -922,8 +922,9 @@ function animate() {
             // Flight mode - no gravity, direct movement control with collision
             const flyDir = new THREE.Vector3();
             
-            flyDir.z = Number(moveForward) - Number(moveBackward);
-            flyDir.x = Number(moveRight) - Number(moveLeft);
+            // Corrected axis mapping for flight mode
+            flyDir.z = Number(moveBackward) - Number(moveForward);  // Back/Forward
+            flyDir.x = Number(moveLeft) - Number(moveRight);        // Left/Right
             flyDir.y = Number(moveUp) - Number(moveDown);
             flyDir.normalize();
 
