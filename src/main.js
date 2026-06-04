@@ -804,6 +804,26 @@ const onKeyUp = (event) => {
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('keyup', onKeyUp);
 
+// --- COLLISION DETECTION ---
+function checkCollision(newPos, playerRadius = 0.3) {
+    const checkX = Math.round(newPos.x);
+    const checkY = Math.round(newPos.y);
+    const checkZ = Math.round(newPos.z);
+    
+    // Check a small box around the player
+    for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+            for (let dz = -1; dz <= 1; dz++) {
+                const key = `${checkX + dx},${checkY + dy},${checkZ + dz}`;
+                if (world.blocks.has(key)) {
+                    return true; // Collision detected
+                }
+            }
+        }
+    }
+    return false; // No collision
+}
+
 // --- MINING & BUILDING ---
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2(0, 0); // Center
@@ -899,23 +919,38 @@ function animate() {
     if (state.isPointerLocked) {
         // Physics & Movement
         if (flyMode) {
-            // Flight mode - no gravity, direct movement control
-            velocity.x = 0;
-            velocity.z = 0;
-            velocity.y = 0;
+            // Flight mode - no gravity, direct movement control with collision
+            const flyDir = new THREE.Vector3();
             
-            direction.z = Number(moveForward) - Number(moveBackward);
-            direction.x = Number(moveRight) - Number(moveLeft);
-            direction.y = Number(moveUp) - Number(moveDown);
-            direction.normalize();
+            flyDir.z = Number(moveForward) - Number(moveBackward);
+            flyDir.x = Number(moveRight) - Number(moveLeft);
+            flyDir.y = Number(moveUp) - Number(moveDown);
+            flyDir.normalize();
 
-            if (moveForward || moveBackward) velocity.z -= direction.z * FLY_SPEED * delta;
-            if (moveLeft || moveRight) velocity.x -= direction.x * FLY_SPEED * delta;
-            if (moveUp || moveDown) velocity.y += direction.y * FLY_SPEED * delta;
+            // Calculate new position
+            const newX = camera.position.x + (flyDir.x * FLY_SPEED * delta);
+            const newY = camera.position.y + (flyDir.y * FLY_SPEED * delta);
+            const newZ = camera.position.z + (flyDir.z * FLY_SPEED * delta);
 
-            controls.moveRight(-velocity.x * delta);
-            controls.moveForward(-velocity.z * delta);
-            camera.position.y += (velocity.y * delta);
+            // Check collision before moving
+            const newPos = new THREE.Vector3(newX, newY, newZ);
+            if (!checkCollision(newPos)) {
+                camera.position.copy(newPos);
+            } else {
+                // Try moving only in individual directions if full movement blocked
+                const testX = new THREE.Vector3(newX, camera.position.y, camera.position.z);
+                if (!checkCollision(testX)) {
+                    camera.position.x = newX;
+                }
+                const testY = new THREE.Vector3(camera.position.x, newY, camera.position.z);
+                if (!checkCollision(testY)) {
+                    camera.position.y = newY;
+                }
+                const testZ = new THREE.Vector3(camera.position.x, camera.position.y, newZ);
+                if (!checkCollision(testZ)) {
+                    camera.position.z = newZ;
+                }
+            }
         } else {
             // Normal walking mode
             velocity.x -= velocity.x * 10.0 * delta;
