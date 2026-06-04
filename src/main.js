@@ -11,7 +11,7 @@ import { openAIService } from './services/openai.js';
 const MOVE_SPEED = 10.0;
 const JUMP_FORCE = 5.0;
 const GRAVITY = 15.0;
-const FLY_SPEED = 15.0;
+const FLY_SPEED = 30.0;
 
 // --- ENGINE SETUP ---
 const scene = new THREE.Scene();
@@ -401,7 +401,7 @@ async function parseAgentCommand(cmdString) {
             if (args.length > 1 && args[1].toLowerCase() === 'fly') {
                 flyMode = true;
                 gravityEnabled = false;
-                appendAgentMessage("Flight mode activated! Use arrow keys to move in all directions.");
+                appendAgentMessage("Flight mode activated! Use arrow keys to move in all directions. Speed: 30 units/sec!");
             } else {
                 appendAgentMessage("Usage: start fly");
             }
