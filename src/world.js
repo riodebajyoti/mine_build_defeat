@@ -17,6 +17,8 @@ export class VoxelWorld {
             'Steel': new THREE.MeshStandardMaterial({ color: 0x707070, metalness: 0.8, roughness: 0.2 }),
             'Wood': new THREE.MeshStandardMaterial({ color: 0x5C4033, roughness: 0.9 }),
             'Leaves': new THREE.MeshStandardMaterial({ color: 0x2E8B57, roughness: 0.9 }),
+            'SnowGrass': new THREE.MeshStandardMaterial({ color: 0xF0F8FF, roughness: 0.8 }),
+            'SnowStone': new THREE.MeshStandardMaterial({ color: 0xE0E0E0, roughness: 0.5 }),
         };
 
         this.geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -41,18 +43,54 @@ export class VoxelWorld {
                 const worldX = cx * this.chunkSize + x;
                 const worldZ = cz * this.chunkSize + z;
 
-                // Simple height generation
-                const height = Math.floor(Math.sin(worldX * 0.2) * 2 + Math.cos(worldZ * 0.2) * 2 + 5);
+                // Mountain generation - peak at (30, 30)
+                const mountainCenterX = 30;
+                const mountainCenterZ = 30;
+                const distToMountain = Math.sqrt(
+                    Math.pow(worldX - mountainCenterX, 2) + 
+                    Math.pow(worldZ - mountainCenterZ, 2)
+                );
+                
+                let height;
+                if (distToMountain < 25) {
+                    // Mountain - steeper falloff near center
+                    const mountainHeight = 20 * Math.exp(-distToMountain / 12);
+                    height = Math.floor(mountainHeight + 8);
+                } else {
+                    // Regular terrain - simple wave pattern
+                    height = Math.floor(Math.sin(worldX * 0.2) * 2 + Math.cos(worldZ * 0.2) * 2 + 5);
+                }
+
+                // Add some noise variation to terrain
+                const noiseVariation = Math.sin(worldX * 0.1) * Math.cos(worldZ * 0.15);
+                height = Math.max(0, height + Math.floor(noiseVariation));
 
                 for (let y = -15; y < height; y++) {
-                    const type = y === height - 1 ? 'Grass' : (y > height - 4 ? 'Dirt' : 'Stone');
+                    let type;
+                    
+                    // Determine block type based on height and whether in mountain
+                    if (distToMountain < 25 && height > 15) {
+                        // Snow-covered mountain peak
+                        type = y === height - 1 ? 'SnowGrass' : (y > height - 3 ? 'SnowStone' : 'Stone');
+                    } else {
+                        // Regular terrain
+                        type = y === height - 1 ? 'Grass' : (y > height - 4 ? 'Dirt' : 'Stone');
+                    }
+                    
                     const key = `${worldX},${y},${worldZ}`;
                     this.blocks.set(key, type);
                     chunk.blocks.set(key, type);
                 }
 
                 // Tree generation with 1.5% chance per column on grass
-                if (Math.random() < 0.015) {
+                // Trees spawn on regular terrain AND on mountain slopes (but not the very peak)
+                if (Math.random() < 0.015 && height > 2) {
+                    // Don't spawn trees on very steep peaks (height > 20)
+                    if (distToMountain < 25 && height > 20) {
+                        // Skip very high snow peaks
+                        continue;
+                    }
+                    
                     const trunkHeight = 4 + Math.floor(Math.random() * 2);
                     
                     // Place trunk (Wood)
