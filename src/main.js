@@ -6,6 +6,8 @@ import { Boss } from './boss.js';
 import { Monster } from './monster.js';
 import { Animal } from './animal.js';
 import { openAIService } from './services/openai.js';
+import { WeatherSystem } from './weather.js';
+import { getItemIcon } from './item_icons.js';
 
 // --- CONFIG ---
 const MOVE_SPEED = 10.0;
@@ -135,6 +137,9 @@ for (let cx = -1; cx <= 1; cx++) {
 }
 updateHandModel(); // Initialize hand now that we have state/world
 
+// --- WEATHER SYSTEM ---
+const weather = new WeatherSystem(scene);
+
 // --- ENEMY SYSTEM ---
 const boss = new Boss(scene, camera);
 let bossSpawned = false;
@@ -181,6 +186,11 @@ function updateLighting() {
         sunLight.intensity = 0.2;
     }
 }
+function updateWeatherHUD() {
+    const el = document.getElementById('weather-indicator');
+    if (el) el.textContent = `${weather.getIcon()} ${weather.getStatus()}`;
+}
+
 // Init rules on start
 initGameRules(gameMode);
 
@@ -389,7 +399,7 @@ async function parseAgentCommand(cmdString) {
     
     switch (command) {
         case 'help':
-            appendAgentMessage("Available commands: 'give <item> [amount]', 'mode <creative|survival>', 'heal', 'start fly', 'end fly', 'help'.");
+            appendAgentMessage("Available commands: 'give <item> [amount]', 'mode <creative|survival>', 'heal', 'start fly', 'end fly', 'weather <clear|rain|storm>', 'help'.");
             break;
         case 'heal':
             state.setHP(100);
@@ -463,6 +473,20 @@ async function parseAgentCommand(cmdString) {
                 appendAgentMessage("Usage: mode <creative|survival>");
             }
             break;
+        case 'weather':
+            if (args.length > 1) {
+                const wType = args[1].toLowerCase();
+                if (['clear', 'rain', 'storm'].includes(wType)) {
+                    weather.setWeather(wType, scene, ambientLight, sunLight);
+                    updateWeatherHUD();
+                    appendAgentMessage(`Weather changed to ${wType.toUpperCase()}. ${weather.getIcon()}`);
+                } else {
+                    appendAgentMessage("Usage: weather <clear|rain|storm>");
+                }
+            } else {
+                appendAgentMessage(`Current weather: ${weather.getStatus()} ${weather.getIcon()}. Usage: weather <clear|rain|storm>`);
+            }
+            break;
         case 'give':
             if (args.length > 1) {
                 let count = 1;
@@ -518,11 +542,10 @@ accessorySearch.addEventListener('input', () => {
         grid.innerHTML = `<div style="color:#fff;font-family:'Press Start 2P',monospace;font-size:7px;padding:10px;grid-column:1/-1;">NOT FOUND</div>`;
     } else {
         results.forEach(item => {
-            const emoji = ITEM_EMOJI_MAP[item.name] || '📦';
             const card = document.createElement('div');
             card.className = 'catalog-item';
             card.setAttribute('data-name', item.name);
-            card.innerHTML = `<span class="item-emoji">${emoji}</span>`;
+            card.innerHTML = `<img class="mc-item-icon" src="${getItemIcon(item.name)}" alt="${item.name}">`;
             card.onclick = () => state.addResource(item.name, 1);
             grid.appendChild(card);
         });
@@ -699,11 +722,10 @@ function buildCatalog(filter) {
 
     if (filter === 'yours') {
         state.inventory.filter(i => i.count > 0).forEach(item => {
-            const emoji = ITEM_EMOJI_MAP[item.name] || '📦';
             const card = document.createElement('div');
             card.className = 'catalog-item';
             card.setAttribute('data-name', `${item.name} x${item.count}`);
-            card.innerHTML = `<span class="item-emoji">${emoji}</span>`;
+            card.innerHTML = `<img class="mc-item-icon" src="${getItemIcon(item.name)}" alt="${item.name}"><span class="mc-item-count">${item.count}</span>`;
             card.onclick = () => state.equipItem(item);
             grid.appendChild(card);
         });
@@ -712,11 +734,10 @@ function buildCatalog(filter) {
 
     const items = filter === 'all' ? MINECRAFT_ITEMS : MINECRAFT_ITEMS.filter(i => i.cat === filter);
     items.forEach(item => {
-        const emoji = ITEM_EMOJI_MAP[item.name] || '📦';
         const card = document.createElement('div');
         card.className = 'catalog-item';
         card.setAttribute('data-name', item.name);
-        card.innerHTML = `<span class="item-emoji">${emoji}</span>`;
+        card.innerHTML = `<img class="mc-item-icon" src="${getItemIcon(item.name)}" alt="${item.name}">`;
         card.onclick = () => state.addResource(item.name, 1);
         grid.appendChild(card);
     });
@@ -1065,6 +1086,7 @@ function animate() {
         robotGroup.lookAt(lookTarget);
 
         world.update(delta, camera.position);
+        weather.update(delta, camera.position);
         
         // Time Cycle Logic
         if (camera.position.y >= -10) { // Don't process time cycles while in HOLE_ZONE
@@ -1076,11 +1098,27 @@ function animate() {
                     enableAnimalsSpawning = false;
                     enableMonstersSpawning = true;
                     updateLighting();
-                    state.showHelperMsg("Night has fallen. Monsters are emerging.");
+                    weather.setWeather('storm', scene, ambientLight, sunLight);
+                    updateWeatherHUD();
+                    state.showHelperMsg("Night has fallen. A storm rages. Monsters are emerging.");
+                } else if (gameMode === 'survival' && worldTime === 'NIGHT') {
+                    worldTime = 'MORNING';
+                    enableMonstersSpawning = false;
+                    enableAnimalsSpawning = true;
+                    updateLighting();
+                    weather.setWeather('clear', scene, ambientLight, sunLight);
+                    updateWeatherHUD();
+                    state.showHelperMsg("Morning breaks. The storm has passed.");
                 } else if (gameMode === 'creative') {
                     // EVERY 60 seconds: TOGGLE world.time
                     worldTime = worldTime === 'MORNING' ? 'NIGHT' : 'MORNING';
                     updateLighting();
+                    if (worldTime === 'NIGHT') {
+                        weather.setWeather('rain', scene, ambientLight, sunLight);
+                    } else {
+                        weather.setWeather('clear', scene, ambientLight, sunLight);
+                    }
+                    updateWeatherHUD();
                     state.showHelperMsg(worldTime === 'MORNING' ? "Morning breaks." : "Night falls.");
                 }
                 timeCycleTimer = 0; 

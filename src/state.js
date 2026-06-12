@@ -1,3 +1,5 @@
+import { getItemIcon } from './item_icons.js';
+
 export const state = {
     hp: 100,
     energy: 100,
@@ -25,32 +27,13 @@ export const state = {
         const list = document.getElementById('accessories-list');
         if (!list) return;
         list.innerHTML = '';
-        const EMOJI_MAP = {
-            'Dirt':'🟫','Stone':'⬜','Wood':'🪵','Steel':'⚙️','Cores':'🔵','Grass':'🟩','Meat':'🥩',
-            'Wood Sword':'🗡️','Stone Sword':'⚔️','Iron Sword':'🔪','Diamond Sword':'💎',
-            'Gold Sword':'✨','Netherite Sword':'🔥','Bow':'🏹','Crossbow':'🎯',
-            'Trident':'🔱','Shield':'🛡️','Arrow':'➡️','Wood Pickaxe':'⛏️',
-            'Stone Pickaxe':'⛏️','Iron Pickaxe':'⚒️','Diamond Pickaxe':'💎',
-            'Netherite Pickaxe':'🔥','Wood Axe':'🪓','Iron Axe':'🪓','Diamond Axe':'💎',
-            'Shovel':'🪣','Hoe':'🌾','Fishing Rod':'🎣','Shears':'✂️',
-            'Flint & Steel':'🔥','Compass':'🧭','Clock':'🕐','Spyglass':'🔭',
-            'Leather Helmet':'🪖','Iron Helmet':'⛑️','Diamond Helmet':'💎',
-            'Netherite Helmet':'🔥','Iron Chestplate':'🦺','Diamond Chestplate':'💎',
-            'Elytra':'🦋','Iron Leggings':'👖','Diamond Boots':'👢','Gold Armor':'👑',
-            'Health Potion':'❤️','Speed Potion':'💨','Strength Potion':'💪',
-            'Fire Resist Potion':'🔥','Night Vision Potion':'👁️','Invisibility Potion':'👻',
-            'Poison Potion':'☠️','Splash Potion':'💦','Exp Bottle':'🟢',
-            'Ender Pearl':'🟣','Eye of Ender':'👁️','Totem of Undying':'🗿',
-            'Enchanted Book':'📖','Lead':'🪢','Name Tag':'🏷️','Firework':'🎆',
-            'Map':'🗺️','Music Disc':'💿','TNT':'💥','Beacon':'🔆','Nether Star':'⭐',
-        };
         this.inventory.forEach(item => {
             if (item.count > 0 || item.id <= 5) {
-                const emoji = EMOJI_MAP[item.name] || '📦';
+                const icon = getItemIcon(item.name);
                 const el = document.createElement('div');
                 el.className = 'accessory-item';
                 el.title = item.name;
-                el.innerHTML = `${emoji}<span class="item-count">${item.count > 0 ? item.count : ''}</span>`;
+                el.innerHTML = `<img class="slot-icon" src="${icon}" alt="${item.name}"><span class="item-count">${item.count > 0 ? item.count : ''}</span>`;
                 el.onclick = () => this.equipItem(item);
                 list.appendChild(el);
             }
@@ -91,8 +74,9 @@ export const state = {
 
             const item = this.inventory[i];
             if (item) {
-                let shortName = item.name.length > 3 ? item.name.substring(0,3).toUpperCase() : item.name.toUpperCase();
-                slot.innerHTML = `<span style="font-size: 9px; color: var(--accent);">${shortName}</span><br><b>${item.count}</b>`;
+                const icon = getItemIcon(item.name);
+                const count = item.count > 0 ? `<span class="slot-count">${item.count > 99 ? '99+' : item.count}</span>` : '';
+                slot.innerHTML = `<img class="slot-icon" src="${icon}" alt="${item.name}">${count}`;
                 slot.title = item.name;
             }
         });
