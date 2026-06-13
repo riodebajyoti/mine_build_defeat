@@ -643,11 +643,22 @@ function drawHorseArmor(ctx, c='#C8A020') {
 }
 
 function drawBed(ctx, c='#CC2020') {
-    fill(ctx,0,5,16,10,'#8B5E30');
-    fill(ctx,0,4,3,11,'#6B4020'); fill(ctx,13,4,3,11,'#6B4020');
-    fill(ctx,2,5,4,5,'#E8E8E8');
-    fill(ctx,3,5,11,9,c); fill(ctx,5,5,8,1,lighten(c,30));
-    [[3,13],[4,13],[12,13],[13,13]].forEach(([x,y])=>fill(ctx,x,y,2,2,'#5A3010'));
+    const wood='#9A6B3C', shadow='#5C3A1C', frame='#7A5028';
+    // top face (rows 0-9): left=pillow, right=blanket
+    fill(ctx,0,0,16,10,wood);
+    fill(ctx,1,2,6,7,'#D0CEC8'); fill(ctx,2,3,4,5,'#EFEFEF'); fill(ctx,2,3,2,3,'#FFFFFF');
+    fill(ctx,8,2,7,7,c); fill(ctx,9,3,5,1,lighten(c,40));
+    fill(ctx,8,0,1,10,frame);            // divider
+    fill(ctx,0,0,16,2,shadow);           // headboard top
+    fill(ctx,0,0,2,10,shadow);           // left headboard
+    fill(ctx,14,0,2,10,darken(shadow,20)); // right shadow
+    fill(ctx,2,2,12,1,lighten(wood,15)); // top-face highlight
+    // front face (rows 10-15)
+    fill(ctx,0,10,16,6,frame);
+    fill(ctx,2,11,12,4,shadow);
+    fill(ctx,0,10,16,1,lighten(frame,10));
+    fill(ctx,0,10,2,6,shadow);
+    fill(ctx,14,10,2,6,darken(shadow,20));
 }
 
 function drawExpBottle(ctx) {

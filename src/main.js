@@ -61,15 +61,17 @@ function updateHandModel() {
         texture.magFilter = THREE.NearestFilter;
         texture.minFilter = THREE.NearestFilter;
 
-        const geometry = new THREE.PlaneGeometry(0.4, 0.4);
+        const geometry = new THREE.PlaneGeometry(0.5, 0.5);
         const material = new THREE.MeshBasicMaterial({
             map: texture,
             transparent: true,
             alphaTest: 0.05,
             side: THREE.DoubleSide,
+            depthTest: false,
         });
         currentHandMesh = new THREE.Mesh(geometry, material);
-        currentHandMesh.rotation.set(-0.15, -Math.PI / 5, 0.1);
+        currentHandMesh.renderOrder = 999;
+        currentHandMesh.rotation.set(-0.1, -Math.PI / 6, 0.08);
         handGroup.add(currentHandMesh);
     } else {
         // Bare fist
