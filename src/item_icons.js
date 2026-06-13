@@ -1,20 +1,32 @@
 // Generates Minecraft-style 16x16 pixel art icons as canvas data URLs.
 // Each icon is cached after first generation.
 
-const _cache = new Map();
+const _cache = new Map();       // data URL cache
+const _canvasCache = new Map(); // canvas element cache
 const S = 16; // canvas size
 
-export function getItemIcon(name) {
-    if (_cache.has(name)) return _cache.get(name);
+function _getOrCreateCanvas(name) {
+    if (_canvasCache.has(name)) return _canvasCache.get(name);
     const canvas = document.createElement('canvas');
     canvas.width = S; canvas.height = S;
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, S, S);
     _drawIcon(ctx, name);
-    const url = canvas.toDataURL();
+    _canvasCache.set(name, canvas);
+    return canvas;
+}
+
+export function getItemIcon(name) {
+    if (_cache.has(name)) return _cache.get(name);
+    const url = _getOrCreateCanvas(name).toDataURL();
     _cache.set(name, url);
     return url;
+}
+
+// Returns the raw canvas — use with new THREE.CanvasTexture(canvas)
+export function getItemCanvas(name) {
+    return _getOrCreateCanvas(name);
 }
 
 // ── low-level helpers ─────────────────────────────────────────────────────

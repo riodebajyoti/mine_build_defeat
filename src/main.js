@@ -8,6 +8,8 @@ import { Animal } from './animal.js';
 import { openAIService } from './services/openai.js';
 import { WeatherSystem } from './weather.js';
 import { getItemIcon } from './item_icons.js';
+import { getItemCanvas } from './item_icons.js';
+import { DroppedItem } from './dropped_item.js';
 
 // --- CONFIG ---
 const MOVE_SPEED = 10.0;
@@ -36,6 +38,11 @@ let lastItemHeldName = null;
 function updateHandModel() {
     if (currentHandMesh) {
         handGroup.remove(currentHandMesh);
+        if (currentHandMesh.material) {
+            if (currentHandMesh.material.map) currentHandMesh.material.map.dispose();
+            currentHandMesh.material.dispose();
+        }
+        if (currentHandMesh.geometry) currentHandMesh.geometry.dispose();
         currentHandMesh = null;
     }
 
@@ -43,42 +50,29 @@ function updateHandModel() {
     if (currentItem && currentItem.count > 0) {
         lastItemHeldName = currentItem.name;
     } else if (!currentItem || currentItem.count === 0) {
-        // Show last held even if 0 left (until selection changes)
         if (lastItemHeldName) {
             currentItem = { name: lastItemHeldName, count: 0 };
         }
     }
 
     if (currentItem && currentItem.name) {
-        const type = currentItem.name;
-        let geometry, material;
+        const canvas = getItemCanvas(currentItem.name);
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.magFilter = THREE.NearestFilter;
+        texture.minFilter = THREE.NearestFilter;
 
-        const baseBlocks = ['Dirt', 'Stone', 'Wood', 'Steel', 'Cores', 'Grass'];
-        if (baseBlocks.includes(type)) {
-            geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3);
-            material = new THREE.MeshStandardMaterial({ color: 0xaaaaaa }); // Fallback if world materials aren't available yet
-            if (type === 'Dirt') material.color.setHex(0x8B4513);
-            else if (type === 'Stone') material.color.setHex(0x808080);
-            else if (type === 'Grass') material.color.setHex(0x228B22);
-            else if (type === 'Steel') material.color.setHex(0x707070);
-        } else {
-            geometry = new THREE.CylinderGeometry(0.02, 0.04, 0.6, 8);
-            let hash = 0;
-            for (let i = 0; i < type.length; i++) hash = type.charCodeAt(i) + ((hash << 5) - hash);
-            const color = new THREE.Color(`hsl(${Math.abs(hash) % 360}, 80%, 50%)`);
-            material = new THREE.MeshStandardMaterial({ color: color, roughness: 0.2, metalness: 0.8, emissive: color, emissiveIntensity: 0.2 });
-        }
-
+        const geometry = new THREE.PlaneGeometry(0.4, 0.4);
+        const material = new THREE.MeshBasicMaterial({
+            map: texture,
+            transparent: true,
+            alphaTest: 0.05,
+            side: THREE.DoubleSide,
+        });
         currentHandMesh = new THREE.Mesh(geometry, material);
-        if (!baseBlocks.includes(type)) {
-            currentHandMesh.rotation.x = Math.PI / 2;
-            currentHandMesh.position.set(0, 0, -0.2);
-        } else {
-            currentHandMesh.rotation.set(-0.2, -Math.PI / 4, 0.1);
-        }
+        currentHandMesh.rotation.set(-0.15, -Math.PI / 5, 0.1);
         handGroup.add(currentHandMesh);
     } else {
-        // Bare hand (no item ever held)
+        // Bare fist
         const geometry = new THREE.BoxGeometry(0.15, 0.5, 0.15);
         const material = new THREE.MeshStandardMaterial({ color: 0xd2b48c, roughness: 0.6 });
         currentHandMesh = new THREE.Mesh(geometry, material);
@@ -147,6 +141,7 @@ let monsters = [];
 let nextMonsterSpawn = 10;
 let animals = [];
 let nextAnimalSpawn = 10;
+let droppedItems = [];
 let gameMode = 'creative';
 
 // Game Rules State
@@ -899,9 +894,21 @@ document.addEventListener('mousedown', (event) => {
     const baseBlocks = ['Dirt', 'Stone', 'Wood', 'Steel', 'Cores', 'Grass'];
     const isAccessory = currentItem && !baseBlocks.includes(currentItem.name) && currentItem.count > 0;
 
-    // Right-click drops the accessory
+    // Right-click drops the accessory onto the ground
     if (isAccessory && event.button === 2) {
-        state.showHelperMsg(`Dropped the ${currentItem.name}!`);
+        const dropPos = camera.position.clone();
+        const fwd = new THREE.Vector3();
+        camera.getWorldDirection(fwd);
+        dropPos.addScaledVector(fwd, 1.2);
+        // Find ground beneath drop point
+        const gx = Math.round(dropPos.x), gz = Math.round(dropPos.z);
+        let groundY = dropPos.y - 1.5;
+        for (let y = 15; y >= -15; y--) {
+            if (world.blocks.has(`${gx},${y},${gz}`)) { groundY = y + 0.5; break; }
+        }
+        dropPos.y = groundY;
+        droppedItems.push(new DroppedItem(scene, dropPos, currentItem.name, 1));
+        state.showHelperMsg(`Dropped ${currentItem.name}!`);
         currentItem.count = Math.max(0, currentItem.count - 1);
         state.notify();
         return;
@@ -1167,6 +1174,9 @@ function animate() {
             }
             return true;
         });
+
+        droppedItems.forEach(d => d.update(delta, camera.position, state));
+        droppedItems = droppedItems.filter(d => d.active);
     }
 
     renderer.render(scene, camera);
