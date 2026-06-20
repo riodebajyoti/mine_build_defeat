@@ -255,14 +255,16 @@ export class VoxelWorld {
     }
 
     placeBlock(point, normal) {
-        // Place block adjacent to the surface hit
         const x = Math.round(point.x + normal.x * 0.5);
         const y = Math.round(point.y + normal.y * 0.5);
         const z = Math.round(point.z + normal.z * 0.5);
+        this.placeBlockAt(x, y, z);
+    }
 
+    placeBlockAt(x, y, z) {
         const currentItem = state.inventory[state.selectedSlot];
         if (currentItem && currentItem.count > 0) {
-            this.setBlock(x, y, z, currentItem.name === 'Dirt' ? 'Grass' : currentItem.name); // Simple map
+            this.setBlock(x, y, z, currentItem.name === 'Dirt' ? 'Grass' : currentItem.name);
             currentItem.count--;
             state.notify();
             const cx = Math.floor(x / this.chunkSize);

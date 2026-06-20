@@ -920,18 +920,23 @@ document.addEventListener('mousedown', (event) => {
 
     if (intersects.length > 0) {
         const intersection = intersects[0];
-        if (event.button === 0) { // LEFT CLICK: ALWAYS MINE/DIG
+        if (event.button === 0) { // LEFT CLICK: MINE
             world.mineBlock(intersection.object, intersection.point, intersection.face.normal);
 
-            // Spawn Boss after mining 5 blocks (Survival Only)
             const dirtCount = state.inventory.find(i => i.name === 'Dirt')?.count || 0;
             if (gameMode === 'survival' && dirtCount >= 5 && !bossSpawned) {
                 boss.activate();
                 bossSpawned = true;
             }
-        } else if (event.button === 2 && !isAccessory) { // RIGHT CLICK: BUILD (if holding block)
+        } else if (event.button === 2 && !isAccessory) { // RIGHT CLICK: PLACE on surface
             world.placeBlock(intersection.point, intersection.face.normal);
         }
+    } else if (event.button === 2 && !isAccessory) {
+        // RIGHT CLICK in empty air: place block at cursor reach (5 units)
+        const dir = new THREE.Vector3();
+        camera.getWorldDirection(dir);
+        const reach = camera.position.clone().addScaledVector(dir, 5);
+        world.placeBlockAt(Math.round(reach.x), Math.round(reach.y), Math.round(reach.z));
     }
 });
 
@@ -1019,14 +1024,23 @@ function animate() {
 
             camera.position.y += (velocity.y * delta);
 
-            // Ground Collision (Simple dynamic)
-            const currentX = Math.round(camera.position.x);
-            const currentZ = Math.round(camera.position.z);
-            let groundY = 0; // Default floor
-            for (let y = 15; y >= -5; y--) {
-                if (world.blocks.has(`${currentX},${y},${currentZ}`)) {
-                    groundY = y + 1.5; // Player height above block
-                    break;
+            // Ground Collision — check 4 corners of player footprint, search from feet down
+            const px = camera.position.x, pz = camera.position.z;
+            const pr = 0.28;
+            const corners = [
+                [Math.floor(px - pr), Math.floor(pz - pr)],
+                [Math.floor(px + pr), Math.floor(pz - pr)],
+                [Math.floor(px - pr), Math.floor(pz + pr)],
+                [Math.floor(px + pr), Math.floor(pz + pr)],
+            ];
+            const searchTop = Math.floor(camera.position.y - 0.6); // start just below hips, never above
+            let groundY = 0;
+            for (const [gx, gz] of corners) {
+                for (let y = searchTop; y >= -5; y--) {
+                    if (world.blocks.has(`${gx},${y},${gz}`)) {
+                        groundY = Math.max(groundY, y + 1.5);
+                        break;
+                    }
                 }
             }
 
