@@ -857,6 +857,22 @@ document.addEventListener('mousedown', (event) => {
 
     raycaster.setFromCamera(mouse, camera);
 
+    // RIGHT-CLICK on a dropped item on the ground → pick it up
+    if (event.button === 2) {
+        const itemSprites = droppedItems.filter(d => d.active).map(d => d.sprite);
+        const itemHits = raycaster.intersectObjects(itemSprites);
+        if (itemHits.length > 0) {
+            const hitSprite = itemHits[0].object;
+            const dropped = droppedItems.find(d => d.sprite === hitSprite);
+            if (dropped) {
+                state.addResource(dropped.itemName, dropped.count);
+                state.showHelperMsg(`Picked up ${dropped.itemName}!`);
+                dropped.die();
+            }
+            return;
+        }
+    }
+
     // Check Boss Hit FIRST
     if (gameMode === 'survival' && boss.active && event.button === 0) {
         const attackIntersects = raycaster.intersectObject(boss.group, true);
