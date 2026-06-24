@@ -9,6 +9,7 @@ export class DroppedItem {
         this.active = true;
         this.bobTime = Math.random() * Math.PI * 2;
         this.groundY = position.y;
+        this.pickupDelay = 1.5; // seconds before auto-pickup activates
 
         const canvas = getItemCanvas(itemName);
         const texture = new THREE.CanvasTexture(canvas);
@@ -28,6 +29,11 @@ export class DroppedItem {
         this.bobTime += delta * 2.2;
         this.sprite.position.y = this.groundY + 0.35 + Math.sin(this.bobTime) * 0.08;
         this.sprite.material.rotation += delta * 1.8;
+
+        if (this.pickupDelay > 0) {
+            this.pickupDelay -= delta;
+            return;
+        }
 
         if (this.sprite.position.distanceTo(playerPos) < 1.8) {
             state.addResource(this.itemName, this.count);
