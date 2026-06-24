@@ -1173,8 +1173,8 @@ function animate() {
             if (!wallCollides(camera.position.x + dx, camera.position.z + dz)) {
                 camera.position.x += dx;
                 camera.position.z += dz;
-            } else if (canJump && !wallCollides(camera.position.x + dx, camera.position.z + dz, camera.position.y + 1.0)) {
-                // Auto step-up like Minecraft — 1 block high hill
+            } else if (!wallCollides(camera.position.x + dx, camera.position.z + dz, camera.position.y + 1.1)) {
+                // Auto step-up — space is clear 1 block higher, so step onto it
                 camera.position.x += dx;
                 camera.position.z += dz;
                 camera.position.y += 1.0;
