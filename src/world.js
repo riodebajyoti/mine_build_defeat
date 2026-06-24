@@ -255,10 +255,16 @@ export class VoxelWorld {
     }
 
     placeBlock(point, normal) {
-        const x = Math.round(point.x + normal.x * 0.5);
-        const y = Math.round(point.y + normal.y * 0.5);
-        const z = Math.round(point.z + normal.z * 0.5);
-        this.placeBlockAt(x, y, z);
+        // Step slightly INSIDE the face to find which block was hit (same as mineBlock)
+        const hitX = Math.round(point.x - normal.x * 0.5);
+        const hitY = Math.round(point.y - normal.y * 0.5);
+        const hitZ = Math.round(point.z - normal.z * 0.5);
+        // Then step one full block outward in the normal direction to get the adjacent slot
+        this.placeBlockAt(
+            hitX + Math.round(normal.x),
+            hitY + Math.round(normal.y),
+            hitZ + Math.round(normal.z)
+        );
     }
 
     placeBlockAt(x, y, z) {

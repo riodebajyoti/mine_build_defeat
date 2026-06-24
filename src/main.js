@@ -10,6 +10,7 @@ import { WeatherSystem } from './weather.js';
 import { getItemIcon } from './item_icons.js';
 import { getItemCanvas } from './item_icons.js';
 import { DroppedItem } from './dropped_item.js';
+import { FURNITURE_NAMES, createFurnitureMesh } from './furniture.js';
 
 // --- CONFIG ---
 const MOVE_SPEED = 10.0;
@@ -145,6 +146,90 @@ let animals = [];
 let nextAnimalSpawn = 10;
 let droppedItems = [];
 let gameMode = 'creative';
+
+// --- BED 3D MODEL SYSTEM ---
+const BED_NAMES = new Set(['bed','red bed','blue bed','white bed','yellow bed','green bed','purple bed','black bed','pink bed','orange bed','cyan bed']);
+const BED_COLOR_MAP = {
+    red: 0xCC2020, blue: 0x2050CC, white: 0xE8E8E8, yellow: 0xD4C010,
+    green: 0x208020, purple: 0x8020CC, black: 0x282828, pink: 0xE050A0,
+    orange: 0xD45010, cyan: 0x10A0A0,
+};
+function getBedColor(itemName) {
+    const n = itemName.toLowerCase();
+    for (const [key, val] of Object.entries(BED_COLOR_MAP)) {
+        if (n.includes(key)) return val;
+    }
+    return 0xCC2020; // default red
+}
+function createBedMesh(itemName) {
+    const g = new THREE.Group();
+    const frameMat  = new THREE.MeshStandardMaterial({ color: 0x7A5028, roughness: 0.85 });
+    const legMat    = new THREE.MeshStandardMaterial({ color: 0x4A2010, roughness: 0.9  });
+    const pillowMat = new THREE.MeshStandardMaterial({ color: 0xEFEFEF, roughness: 0.5  });
+    const blanketMat= new THREE.MeshStandardMaterial({ color: getBedColor(itemName), roughness: 0.7 });
+    // 4 legs  (y 0 → 0.2)
+    const legGeo = new THREE.BoxGeometry(0.1, 0.2, 0.1);
+    [[-0.38,-0.38],[0.38,-0.38],[-0.38,0.38],[0.38,0.38]].forEach(([x,z]) => {
+        const leg = new THREE.Mesh(legGeo, legMat);
+        leg.position.set(x, 0.1, z);
+        leg.castShadow = true;
+        g.add(leg);
+    });
+    // Flat frame base  (y 0.2 → 0.32)
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.12, 0.88), frameMat);
+    base.position.set(0, 0.26, 0); base.castShadow = true; g.add(base);
+    // Headboard  (tall panel at -Z end)
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.32, 0.08), frameMat);
+    head.position.set(0, 0.38, -0.44); head.castShadow = true; g.add(head);
+    // Footboard  (shorter panel at +Z end)
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.16, 0.07), frameMat);
+    foot.position.set(0, 0.3, 0.44); foot.castShadow = true; g.add(foot);
+    // Pillow  (head-end half)
+    const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.09, 0.65), pillowMat);
+    pillow.position.set(-0.22, 0.355, 0); pillow.castShadow = true; g.add(pillow);
+    // Blanket  (foot-end half)
+    const blanket = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.09, 0.65), blanketMat);
+    blanket.position.set(0.2, 0.355, 0); blanket.castShadow = true; g.add(blanket);
+    return g;
+}
+let placedBeds = [];
+function placeBed(point, normal, itemName) {
+    // Find adjacent cell (same math as world.placeBlock)
+    const hitX = Math.round(point.x - normal.x * 0.5);
+    const hitY = Math.round(point.y - normal.y * 0.5);
+    const hitZ = Math.round(point.z - normal.z * 0.5);
+    const bx = hitX + Math.round(normal.x);
+    const by = hitY + Math.round(normal.y);
+    const bz = hitZ + Math.round(normal.z);
+    const bed = createBedMesh(itemName);
+    // Face toward the player (yaw only)
+    const camDir = new THREE.Vector3();
+    camera.getWorldDirection(camDir);
+    bed.rotation.y = Math.atan2(camDir.x, camDir.z);
+    // Sit on top of the surface (block center is by, surface top is by-0.5)
+    bed.position.set(bx, by - 0.5, bz);
+    scene.add(bed);
+    placedBeds.push(bed);
+}
+
+// --- FURNITURE 3D MODEL SYSTEM ---
+let placedFurniture = [];
+function placeFurniture(point, normal, itemName) {
+    const hitX = Math.round(point.x - normal.x * 0.5);
+    const hitY = Math.round(point.y - normal.y * 0.5);
+    const hitZ = Math.round(point.z - normal.z * 0.5);
+    const bx = hitX + Math.round(normal.x);
+    const by = hitY + Math.round(normal.y);
+    const bz = hitZ + Math.round(normal.z);
+    const mesh = createFurnitureMesh(itemName);
+    const camDir = new THREE.Vector3();
+    camera.getWorldDirection(camDir);
+    mesh.rotation.y = Math.atan2(camDir.x, camDir.z);
+    mesh.position.set(bx, by - 0.5, bz);
+    mesh.traverse(m => { if (m.isMesh) m.castShadow = true; });
+    scene.add(mesh);
+    placedFurniture.push(mesh);
+}
 
 // Game Rules State
 let worldTime = 'MORNING';
@@ -918,8 +1003,11 @@ document.addEventListener('mousedown', (event) => {
     }
 
     const currentItem = state.inventory[state.selectedSlot];
-    const baseBlocks = ['Dirt', 'Stone', 'Wood', 'Steel', 'Cores', 'Grass'];
-    const isAccessory = currentItem && !baseBlocks.includes(currentItem.name) && currentItem.count > 0;
+    // Non-placeable categories: weapons, tools, armor, potions, etc. get DROPPED on right-click.
+    // Everything else (world blocks, catalog blocks, beds, unknown items like 'Bed') gets PLACED.
+    const ACCESSORY_CATS = new Set(['weapons', 'tools', 'armor', 'headgear', 'horsearmor', 'potions', 'special', 'food', 'materials']);
+    const catalogEntry = currentItem ? MINECRAFT_ITEMS.find(i => i.name === currentItem.name) : null;
+    const isAccessory = currentItem && currentItem.count > 0 && catalogEntry && ACCESSORY_CATS.has(catalogEntry.cat);
 
     // Right-click puts down the held item onto the ground
     if (isAccessory && event.button === 2) {
@@ -963,14 +1051,19 @@ document.addEventListener('mousedown', (event) => {
                 bossSpawned = true;
             }
         } else if (event.button === 2 && !isAccessory) { // RIGHT CLICK: PLACE on surface
-            world.placeBlock(intersection.point, intersection.face.normal);
+            const iName = currentItem?.name ?? '';
+            if (BED_NAMES.has(iName.toLowerCase())) {
+                placeBed(intersection.point, intersection.face.normal, iName);
+                currentItem.count = Math.max(0, currentItem.count - 1);
+                state.notify();
+            } else if (FURNITURE_NAMES.has(iName.toLowerCase())) {
+                placeFurniture(intersection.point, intersection.face.normal, iName);
+                currentItem.count = Math.max(0, currentItem.count - 1);
+                state.notify();
+            } else {
+                world.placeBlock(intersection.point, intersection.face.normal);
+            }
         }
-    } else if (event.button === 2 && !isAccessory) {
-        // RIGHT CLICK in empty air: place block at cursor reach (5 units)
-        const dir = new THREE.Vector3();
-        camera.getWorldDirection(dir);
-        const reach = camera.position.clone().addScaledVector(dir, 5);
-        world.placeBlockAt(Math.round(reach.x), Math.round(reach.y), Math.round(reach.z));
     }
 });
 

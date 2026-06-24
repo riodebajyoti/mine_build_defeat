@@ -729,6 +729,34 @@ function drawLantern(ctx) {
     fill(ctx,3,4,2,7,'rgba(255,220,80,0.3)');
 }
 
+function drawBrick(ctx) {
+    const brick = '#9A3A28', mortar = '#C4B098';
+    bg(ctx, brick);
+    // Horizontal mortar rows
+    fill(ctx, 0, 0,  16, 1, mortar);
+    fill(ctx, 0, 5,  16, 1, mortar);
+    fill(ctx, 0, 10, 16, 1, mortar);
+    fill(ctx, 0, 15, 16, 1, mortar);
+    // Vertical mortar – row 1 (y 1-4): split at x=8
+    fill(ctx, 8, 1, 1, 4, mortar);
+    // Vertical mortar – row 2 (y 6-9): split at x=4 and x=12
+    fill(ctx, 4,  6, 1, 4, mortar);
+    fill(ctx, 12, 6, 1, 4, mortar);
+    // Vertical mortar – row 3 (y 11-14): split at x=8
+    fill(ctx, 8, 11, 1, 4, mortar);
+    // Brick highlights (top edge of each brick)
+    fill(ctx,  1, 1, 6, 1, lighten(brick, 25));
+    fill(ctx,  9, 1, 6, 1, lighten(brick, 25));
+    fill(ctx,  1, 6, 2, 1, lighten(brick, 25));
+    fill(ctx,  5, 6, 6, 1, lighten(brick, 25));
+    fill(ctx, 13, 6, 2, 1, lighten(brick, 25));
+    fill(ctx,  1,11, 6, 1, lighten(brick, 25));
+    fill(ctx,  9,11, 6, 1, lighten(brick, 25));
+    // Right and bottom edge shading
+    fill(ctx, 14, 0, 2, 15, darken(brick, 25));
+    fill(ctx,  0,14, 16,  2, darken(brick, 20));
+}
+
 // ── generic fallback ──────────────────────────────────────────────────────
 
 function drawGeneric(ctx, name) {
@@ -909,6 +937,8 @@ function _drawIcon(ctx, name) {
     if (n==='bell')                   { fill(ctx,5,0,6,2,'#C8A020'); fill(ctx,4,2,8,8,'#D4B030'); fill(ctx,3,4,10,6,'#D4B030'); fill(ctx,4,9,8,3,'#C8A020'); px(ctx,8,11,'#909090'); return; }
     if (n.includes('bookshelf'))      { bg(ctx,'#8B5E2A'); fill(ctx,0,1,16,4,'#C8A040'); fill(ctx,0,7,16,4,'#C8A040'); fill(ctx,0,12,16,4,'#C8A040'); [[1,1],[4,1],[7,1],[10,1],[13,1],[1,7],[4,7],[7,7],[10,7],[13,7],[1,12],[4,12],[7,12],[10,12],[13,12]].forEach(([x,y])=>fill(ctx,x,y,2,4,`hsl(${(x*30+y*20)%360},60%,40%)`)); return; }
     if (n.includes('anvil'))          { fill(ctx,2,0,12,4,'#484848'); fill(ctx,0,3,16,2,'#404040'); fill(ctx,3,5,10,10,'#484848'); fill(ctx,1,13,14,3,'#404040'); fill(ctx,4,5,3,3,lighten('#484848',20)); return; }
+
+    if (n==='brick'||n==='bricks'||n==='brick block') return drawBrick(ctx);
 
     drawGeneric(ctx, name);
 }
