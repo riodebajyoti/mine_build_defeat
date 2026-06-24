@@ -1068,10 +1068,10 @@ document.addEventListener('mousedown', (event) => {
 });
 
 // Wall collision — checks blocks beside the player (above ground level)
-function wallCollides(x, z) {
+function wallCollides(x, z, camY = camera.position.y) {
     const r = 0.3;
-    const by1 = Math.floor(camera.position.y - 0.5); // lower body
-    const by2 = Math.floor(camera.position.y + 0.5); // upper body / head
+    const by1 = Math.floor(camY - 0.5); // lower body
+    const by2 = Math.floor(camY + 0.5); // upper body / head
     const corners = [
         [Math.round(x - r), Math.round(z - r)],
         [Math.round(x + r), Math.round(z - r)],
@@ -1173,7 +1173,14 @@ function animate() {
             if (!wallCollides(camera.position.x + dx, camera.position.z + dz)) {
                 camera.position.x += dx;
                 camera.position.z += dz;
+            } else if (canJump && !wallCollides(camera.position.x + dx, camera.position.z + dz, camera.position.y + 1.0)) {
+                // Auto step-up like Minecraft — 1 block high hill
+                camera.position.x += dx;
+                camera.position.z += dz;
+                camera.position.y += 1.0;
+                velocity.y = 0;
             } else {
+                // Slide along wall
                 if (!wallCollides(camera.position.x + dx, camera.position.z)) camera.position.x += dx;
                 if (!wallCollides(camera.position.x, camera.position.z + dz)) camera.position.z += dz;
             }
