@@ -857,6 +857,30 @@ document.addEventListener('mousedown', (event) => {
 
     raycaster.setFromCamera(mouse, camera);
 
+    // RIGHT-CLICK on a dropped item → pick it up
+    if (event.button === 2) {
+        const lookDir = new THREE.Vector3();
+        camera.getWorldDirection(lookDir);
+        let nearestDrop = null;
+        let nearestAlong = Infinity;
+        for (const d of droppedItems) {
+            if (!d.active) continue;
+            const toItem = d.sprite.position.clone().sub(camera.position);
+            const along = toItem.dot(lookDir);
+            if (along < 0.5 || along > 8) continue;
+            const perp = toItem.clone().sub(lookDir.clone().multiplyScalar(along)).length();
+            if (perp < 0.7 && along < nearestAlong) {
+                nearestAlong = along;
+                nearestDrop = d;
+            }
+        }
+        if (nearestDrop) {
+            state.addResource(nearestDrop.itemName, nearestDrop.count);
+            state.showHelperMsg(`Picked up ${nearestDrop.itemName}!`);
+            nearestDrop.die();
+            return;
+        }
+    }
 
     // Check Boss Hit FIRST
     if (gameMode === 'survival' && boss.active && event.button === 0) {
