@@ -857,33 +857,6 @@ document.addEventListener('mousedown', (event) => {
 
     raycaster.setFromCamera(mouse, camera);
 
-    // RIGHT-CLICK on a dropped item on the ground → pick it up (ray-sphere check)
-    if (event.button === 2) {
-        const lookDir = new THREE.Vector3();
-        camera.getWorldDirection(lookDir);
-
-        let nearestDrop = null;
-        let nearestAlong = Infinity;
-
-        for (const d of droppedItems) {
-            if (!d.active) continue;
-            const toItem = d.sprite.position.clone().sub(camera.position);
-            const along = toItem.dot(lookDir);
-            if (along < 0.5 || along > 8) continue;
-            const perp = toItem.clone().sub(lookDir.clone().multiplyScalar(along)).length();
-            if (perp < 0.7 && along < nearestAlong) {
-                nearestAlong = along;
-                nearestDrop = d;
-            }
-        }
-
-        if (nearestDrop) {
-            state.addResource(nearestDrop.itemName, nearestDrop.count);
-            state.showHelperMsg(`Picked up ${nearestDrop.itemName}!`);
-            nearestDrop.die();
-            return;
-        }
-    }
 
     // Check Boss Hit FIRST
     if (gameMode === 'survival' && boss.active && event.button === 0) {
@@ -924,19 +897,28 @@ document.addEventListener('mousedown', (event) => {
     const baseBlocks = ['Dirt', 'Stone', 'Wood', 'Steel', 'Cores', 'Grass'];
     const isAccessory = currentItem && !baseBlocks.includes(currentItem.name) && currentItem.count > 0;
 
-    // Right-click drops the accessory onto the ground
+    // Right-click puts down the held item onto the ground
     if (isAccessory && event.button === 2) {
         const dropPos = camera.position.clone();
         const fwd = new THREE.Vector3();
         camera.getWorldDirection(fwd);
+        fwd.y = 0;
+        fwd.normalize();
         dropPos.addScaledVector(fwd, 1.2);
-        // Find ground beneath drop point
-        const gx = Math.round(dropPos.x), gz = Math.round(dropPos.z);
-        let groundY = dropPos.y - 1.5;
-        for (let y = 15; y >= -15; y--) {
-            if (world.blocks.has(`${gx},${y},${gz}`)) { groundY = y + 0.5; break; }
+
+        // Search downward from just below player feet using Math.floor for accuracy
+        const gx = Math.floor(dropPos.x + 0.5);
+        const gz = Math.floor(dropPos.z + 0.5);
+        const searchFrom = Math.floor(camera.position.y - 0.5);
+        let groundY = camera.position.y - 1.5;
+        for (let y = searchFrom; y >= -15; y--) {
+            if (world.blocks.has(`${gx},${y},${gz}`)) {
+                groundY = y + 0.5;
+                break;
+            }
         }
         dropPos.y = groundY;
+
         droppedItems.push(new DroppedItem(scene, dropPos, currentItem.name, 1));
         state.showHelperMsg(`Dropped ${currentItem.name}!`);
         currentItem.count = Math.max(0, currentItem.count - 1);
