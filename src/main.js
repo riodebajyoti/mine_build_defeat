@@ -857,8 +857,8 @@ document.addEventListener('mousedown', (event) => {
 
     raycaster.setFromCamera(mouse, camera);
 
-    // RIGHT-CLICK on a dropped item → pick it up
-    if (event.button === 2) {
+    // LEFT-CLICK on a dropped item → pick it up
+    if (event.button === 0) {
         const lookDir = new THREE.Vector3();
         camera.getWorldDirection(lookDir);
         let nearestDrop = null;
