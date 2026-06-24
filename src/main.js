@@ -1067,6 +1067,24 @@ document.addEventListener('mousedown', (event) => {
     }
 });
 
+// Wall collision — checks blocks beside the player (above ground level)
+function wallCollides(x, z) {
+    const r = 0.3;
+    const by1 = Math.floor(camera.position.y - 0.5); // lower body
+    const by2 = Math.floor(camera.position.y + 0.5); // upper body / head
+    const corners = [
+        [Math.round(x - r), Math.round(z - r)],
+        [Math.round(x + r), Math.round(z - r)],
+        [Math.round(x - r), Math.round(z + r)],
+        [Math.round(x + r), Math.round(z + r)],
+    ];
+    for (const [bx, bz] of corners) {
+        if (world.blocks.has(`${bx},${by1},${bz}`)) return true;
+        if (world.blocks.has(`${bx},${by2},${bz}`)) return true;
+    }
+    return false;
+}
+
 let prevTime = performance.now();
 let swingTime = 0;
 let isSwinging = false;
@@ -1146,8 +1164,19 @@ function animate() {
             if (moveForward || moveBackward) velocity.z -= direction.z * MOVE_SPEED * 10.0 * delta;
             if (moveLeft || moveRight) velocity.x -= direction.x * MOVE_SPEED * 10.0 * delta;
 
-            controls.moveRight(-velocity.x * delta);
-            controls.moveForward(-velocity.z * delta);
+            // Horizontal movement with wall collision
+            const rightVec = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
+            const fwdVec = new THREE.Vector3().crossVectors(camera.up, rightVec);
+            const dx = rightVec.x * (-velocity.x * delta) + fwdVec.x * (-velocity.z * delta);
+            const dz = rightVec.z * (-velocity.x * delta) + fwdVec.z * (-velocity.z * delta);
+
+            if (!wallCollides(camera.position.x + dx, camera.position.z + dz)) {
+                camera.position.x += dx;
+                camera.position.z += dz;
+            } else {
+                if (!wallCollides(camera.position.x + dx, camera.position.z)) camera.position.x += dx;
+                if (!wallCollides(camera.position.x, camera.position.z + dz)) camera.position.z += dz;
+            }
 
             camera.position.y += (velocity.y * delta);
 
