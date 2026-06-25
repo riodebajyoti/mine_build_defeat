@@ -1164,16 +1164,50 @@ function animate() {
             if (moveForward || moveBackward) velocity.z -= direction.z * MOVE_SPEED * 10.0 * delta;
             if (moveLeft || moveRight) velocity.x -= direction.x * MOVE_SPEED * 10.0 * delta;
 
-            // Horizontal movement with wall collision
+            // Apply vertical velocity then snap to ground BEFORE horizontal movement.
+            // This ensures wallCollides always uses the correct snapped camera.y, preventing
+            // ground-level terrain from being falsely detected as walls (which caused step-up glitches).
+            camera.position.y += (velocity.y * delta);
+
+            {
+                const px = camera.position.x, pz = camera.position.z;
+                const pr = 0.28;
+                const gCorners = [
+                    [Math.floor(px - pr), Math.floor(pz - pr)],
+                    [Math.floor(px + pr), Math.floor(pz - pr)],
+                    [Math.floor(px - pr), Math.floor(pz + pr)],
+                    [Math.floor(px + pr), Math.floor(pz + pr)],
+                ];
+                const searchTop = Math.floor(camera.position.y - 0.6);
+                let groundY = -Infinity;
+                for (const [gx, gz] of gCorners) {
+                    for (let y = searchTop; y >= -20; y--) {
+                        if (world.blocks.has(`${gx},${y},${gz}`)) {
+                            groundY = Math.max(groundY, y + 1.5);
+                            break;
+                        }
+                    }
+                }
+                if (groundY > -Infinity && camera.position.y < groundY) {
+                    velocity.y = 0;
+                    camera.position.y = groundY;
+                    canJump = true;
+                } else if (camera.position.y > groundY + 0.1) {
+                    canJump = false;
+                }
+            }
+
+            // Horizontal movement with wall collision (camera.y is now snapped — no false positives)
             const rightVec = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
             const fwdVec = new THREE.Vector3().crossVectors(camera.up, rightVec);
             const dx = rightVec.x * (-velocity.x * delta) + fwdVec.x * (-velocity.z * delta);
             const dz = rightVec.z * (-velocity.x * delta) + fwdVec.z * (-velocity.z * delta);
+            const moveMag = Math.abs(dx) + Math.abs(dz);
 
             if (!wallCollides(camera.position.x + dx, camera.position.z + dz)) {
                 camera.position.x += dx;
                 camera.position.z += dz;
-            } else if (!wallCollides(camera.position.x + dx, camera.position.z + dz, camera.position.y + 1.1)) {
+            } else if (moveMag > 0.001 && !wallCollides(camera.position.x + dx, camera.position.z + dz, camera.position.y + 1.1)) {
                 // Auto step-up — space is clear 1 block higher, so step onto it
                 camera.position.x += dx;
                 camera.position.z += dz;
@@ -1183,34 +1217,6 @@ function animate() {
                 // Slide along wall
                 if (!wallCollides(camera.position.x + dx, camera.position.z)) camera.position.x += dx;
                 if (!wallCollides(camera.position.x, camera.position.z + dz)) camera.position.z += dz;
-            }
-
-            camera.position.y += (velocity.y * delta);
-
-            // Ground Collision — check 4 corners of player footprint, search from feet down
-            const px = camera.position.x, pz = camera.position.z;
-            const pr = 0.28;
-            const corners = [
-                [Math.floor(px - pr), Math.floor(pz - pr)],
-                [Math.floor(px + pr), Math.floor(pz - pr)],
-                [Math.floor(px - pr), Math.floor(pz + pr)],
-                [Math.floor(px + pr), Math.floor(pz + pr)],
-            ];
-            const searchTop = Math.floor(camera.position.y - 0.6); // start just below hips, never above
-            let groundY = 0;
-            for (const [gx, gz] of corners) {
-                for (let y = searchTop; y >= -5; y--) {
-                    if (world.blocks.has(`${gx},${y},${gz}`)) {
-                        groundY = Math.max(groundY, y + 1.5);
-                        break;
-                    }
-                }
-            }
-
-            if (camera.position.y < groundY) {
-                velocity.y = 0;
-                camera.position.y = groundY;
-                canJump = true;
             }
             
             // HOLE_ZONE logic
