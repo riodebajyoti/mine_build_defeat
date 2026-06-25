@@ -222,6 +222,7 @@ function placeFurniture(point, normal, itemName) {
     const by = hitY + Math.round(normal.y);
     const bz = hitZ + Math.round(normal.z);
     const mesh = createFurnitureMesh(itemName);
+    mesh.userData.itemName = itemName;
     const camDir = new THREE.Vector3();
     camera.getWorldDirection(camDir);
     mesh.rotation.y = Math.atan2(camDir.x, camDir.z);
@@ -964,6 +965,22 @@ document.addEventListener('mousedown', (event) => {
             state.showHelperMsg(`Picked up ${nearestDrop.itemName}!`);
             nearestDrop.die();
             return;
+        }
+
+        // Left-click on placed furniture → collect it back into inventory
+        const furnitureHits = raycaster.intersectObjects(placedFurniture, true);
+        if (furnitureHits.length > 0) {
+            let hitMesh = furnitureHits[0].object;
+            // Walk up to the root furniture group (which has userData.itemName)
+            while (hitMesh.parent && !hitMesh.userData.itemName) hitMesh = hitMesh.parent;
+            const iName = hitMesh.userData.itemName;
+            if (iName) {
+                scene.remove(hitMesh);
+                placedFurniture.splice(placedFurniture.indexOf(hitMesh), 1);
+                state.addResource(iName, 1);
+                state.showHelperMsg(`Collected ${iName}!`);
+                return;
+            }
         }
     }
 
