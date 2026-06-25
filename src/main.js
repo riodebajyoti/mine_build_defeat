@@ -1197,14 +1197,18 @@ function animate() {
                 }
             }
 
-            // Horizontal movement with wall collision (camera.y is now snapped — no false positives)
+            // Horizontal movement
             const rightVec = new THREE.Vector3().setFromMatrixColumn(camera.matrix, 0);
             const fwdVec = new THREE.Vector3().crossVectors(camera.up, rightVec);
             const dx = rightVec.x * (-velocity.x * delta) + fwdVec.x * (-velocity.z * delta);
             const dz = rightVec.z * (-velocity.x * delta) + fwdVec.z * (-velocity.z * delta);
             const moveMag = Math.abs(dx) + Math.abs(dz);
 
-            if (!wallCollides(camera.position.x + dx, camera.position.z + dz)) {
+            if (!gravityEnabled) {
+                // HOLE_ZONE: no gravity, no wall collision — player flies freely through terrain
+                camera.position.x += dx;
+                camera.position.z += dz;
+            } else if (!wallCollides(camera.position.x + dx, camera.position.z + dz)) {
                 camera.position.x += dx;
                 camera.position.z += dz;
             } else if (moveMag > 0.001 && !wallCollides(camera.position.x + dx, camera.position.z + dz, camera.position.y + 1.1)) {
