@@ -13,7 +13,7 @@ import { DroppedItem } from './dropped_item.js';
 import { FURNITURE_NAMES, createFurnitureMesh } from './furniture.js';
 
 // --- CONFIG ---
-const MOVE_SPEED = 5.0;
+const MOVE_SPEED = 3.0;
 const JUMP_FORCE = 5.0;
 const GRAVITY = 15.0;
 const FLY_SPEED = 30.0;
