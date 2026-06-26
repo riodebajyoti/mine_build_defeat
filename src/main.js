@@ -239,13 +239,55 @@ let seatMesh    = null;    // the furniture mesh being sat on
 let isSleeping  = false;   // player is sleeping in a bed
 
 // Book overlay — created once
-const BOOK_PAGES = [
-    { title: "Chapter I — The World",      text: "In the beginning there was nothing but stone and dirt. The first builders shaped the land with their bare hands, carving out mountains and valleys from the endless grey..." },
-    { title: "Chapter II — The Monsters",  text: "As night fell for the first time, shadowy creatures crawled from the darkness. The builders learned quickly: build high, stay lit, survive until morning." },
-    { title: "Chapter III — The Boss",     text: "Deep beneath the earth lives an ancient evil. It stirs when the land is disturbed — when five blocks of earth are torn from the ground, it wakes..." },
-    { title: "Chapter IV — The Crafters",  text: "With steel in hand and stone at their feet, a new generation of builders rose. They crafted not just shelters, but entire cities — monuments to their will to survive." },
-    { title: "The End?",                   text: "No story truly ends. Every block placed is a new sentence. Every night survived is a new chapter. The world is yours to write." },
+// Full pool of entries — 5 random ones are picked each time you open a bookshelf
+const ALL_BOOK_ENTRIES = [
+    // ── World Lore ──
+    { title: "The First Block",           text: "In the beginning there was nothing but stone and dirt. The first builders shaped the land with their bare hands, carving mountains and valleys from the endless grey..." },
+    { title: "The Night Creatures",       text: "As night fell for the first time, shadowy creatures crawled from the darkness. The builders learned quickly: build high, stay lit, survive until morning." },
+    { title: "The Ancient Boss",          text: "Deep beneath the earth lives an ancient evil. It stirs when five blocks of earth are torn from the ground. Nobody who has woken it has lived to tell the full tale." },
+    { title: "The Age of Crafters",       text: "With steel in hand and stone at their feet, a new generation of builders rose. They crafted not just shelters, but entire cities — monuments to their will to survive." },
+    { title: "The Endless World",         text: "No story truly ends here. Every block placed is a new sentence. Every night survived is a new chapter. The world is yours to write." },
+    { title: "The HOLE_ZONE",             text: "Dig too deep and gravity itself breaks. Below y=-10 the laws of physics no longer apply. Explorers have reported floating freely in the dark — some never came back up." },
+    { title: "Legend of the Storm",       text: "Every night in survival, the sky cracks open and a storm rages. The monsters grow bolder in the rain. Old builders say the storm feeds them — makes them stronger, faster, angrier." },
+    { title: "The Dragon's Egg",          text: "There is said to be a single dragon egg hidden in the world. Those who find it never speak of what they saw afterwards. The egg is always warm to the touch." },
+    // ── Survival Tips ──
+    { title: "Tip: Stay Lit",             text: "Monsters only spawn in darkness. Keep your base well-lit with lanterns or campfires. A single dark corner is all they need to appear." },
+    { title: "Tip: Watch the Sky",        text: "When the sky turns dark blue and the music shifts — night is coming. You have about 60 seconds before the monsters emerge. Use that time wisely." },
+    { title: "Tip: Sleep Early",          text: "A bed placed before nightfall is worth a hundred swords. Sleeping skips the dangerous hours and restores your health and energy. Rest is not weakness — it is strategy." },
+    { title: "Tip: Dig Carefully",        text: "Mining downward rewards you with stone and resources — but go too deep and gravity fails you. Always keep a torch and a clear path back to the surface." },
+    { title: "Tip: The Boss",             text: "Mine five pieces of dirt and the boss awakens. Fight it to claim its reward. But be warned — it will hunt you relentlessly until one of you falls." },
+    { title: "Tip: Crafting Steel",       text: "Steel cannot be found in the world — it must be forged. Gather 3 Stone and press C at any time to craft a Steel ingot. Steel opens doors Stone never could." },
+    { title: "Tip: Collect Furniture",    text: "Left-clicking placed furniture picks it back up. Nothing is permanent — rearrange your home as often as you like. Builders call this 'creative destruction'." },
+    { title: "Tip: Fly in Creative",      text: "In creative mode, double-tap Space to toggle flight. Use Space to rise, Shift to descend. The world looks very different from above." },
+    // ── Nature & Science Facts ──
+    { title: "Did You Know? Diamonds",    text: "Real diamonds form under enormous pressure about 100 miles below Earth's surface. They are carried upward by volcanic eruptions in formations called kimberlite pipes." },
+    { title: "Did You Know? Lightning",   text: "A single bolt of lightning is five times hotter than the surface of the Sun — roughly 30,000 Kelvin. It lasts less than a second but can travel 5 miles." },
+    { title: "Did You Know? Stone",       text: "Granite, the most common building stone, takes millions of years to form as magma cools slowly underground. The stone beneath your feet is older than life itself." },
+    { title: "Did You Know? Forests",     text: "A single mature oak tree can absorb about 48 pounds of carbon dioxide per year and produces enough oxygen for two people to breathe for a full day." },
+    { title: "Did You Know? The Moon",    text: "The Moon moves about 1.5 inches further from Earth every year. When it formed 4.5 billion years ago, it was 14 times closer — and nights would have been blindingly bright." },
+    { title: "Did You Know? Caves",       text: "The world's longest cave system is Mammoth Cave in Kentucky, USA — over 400 miles of mapped passages. Scientists believe at least 600 more miles remain unexplored." },
+    { title: "Did You Know? Iron",        text: "Iron is the most abundant element on Earth by mass. The Earth's core is mostly iron and nickel. Without it, our planet would have no magnetic field and no protection from solar wind." },
+    { title: "Did You Know? Water",       text: "Water is the only natural substance found in all three states — solid, liquid, and gas — at temperatures naturally occurring on Earth's surface." },
+    { title: "Did You Know? Sand",        text: "Sand is one of the world's most consumed natural resources after water. It takes thousands of years for rocks to erode into sand grains fine enough to build with." },
+    { title: "Did You Know? Stars",       text: "When you look at a star in the night sky, you are seeing light that left it years, decades, or even thousands of years ago. Some stars you see no longer exist." },
+    // ── Crafting & Building Lore ──
+    { title: "The Art of Building",       text: "The greatest builders did not plan their creations — they listened to the land. They built around hills, over rivers, beneath cliffs. Let the world guide your hand." },
+    { title: "On Wood",                   text: "Every type of wood tells a different story. Oak speaks of endurance. Birch of lightness. Dark Oak of mystery. Choose your materials the way a writer chooses words." },
+    { title: "On Stone",                  text: "Stone is the language of permanence. Civilizations are remembered by what they built in stone. What will yours say?" },
+    { title: "Furniture & Memory",        text: "A chair placed by a window. A bookshelf beside a bed. These small arrangements turn four walls into a home. Objects carry memory — place them with intention." },
+    { title: "The Campfire Circle",       text: "Before there were walls, there was the campfire. Builders would gather around its warmth, sharing knowledge and stories. The campfire is the oldest piece of furniture." },
+    // ── Fun & Philosophical ──
+    { title: "A Thought on Monsters",     text: "Perhaps the monsters are not evil — only afraid. They emerge in darkness, searching for what builders have: warmth, light, a place to call home. We fear what we share." },
+    { title: "On Survival",               text: "Survival is not the absence of danger. It is the presence of will. Every morning you see is a victory. Every shelter you raise is a declaration: I am still here." },
+    { title: "On Rest",                   text: "The greatest builders knew that rest is part of building. A tired mind places crooked walls. Sleep, and you see your creation clearly again in the morning light." },
+    { title: "The Builder's Creed",       text: "We build not because we must, but because we can imagine something that doesn't yet exist — and refuse to leave it that way." },
+    { title: "On Exploration",            text: "Every unexplored corner of the map holds something. It may be danger. It may be beauty. It is almost always both. Walk further than you planned." },
+    { title: "Time",                      text: "Days and nights cycle whether you act or not. Time does not wait for the builder who is still deciding. The question is never when — it is always what will you do with it now." },
+    { title: "Mystery of the Ender Pearl", text: "Nobody knows where Ender Pearls come from, or what lies on the other side of each throw. Some say they are windows to alternate worlds. Others say they are just rocks. Both may be right." },
+    { title: "Last Entry",                text: "Whoever wrote these pages is gone now. But their words remain — pressed into paper, preserved on shelves, waiting for someone who would stop, sit down, and read. That someone is you." },
 ];
+
+let currentBookPages = [];
 let bookPageIndex = 0;
 
 function createBookOverlay() {
@@ -283,13 +325,13 @@ function createBookOverlay() {
     document.body.appendChild(el);
 
     function renderPage() {
-        const p = BOOK_PAGES[bookPageIndex];
+        const p = currentBookPages[bookPageIndex];
         document.getElementById('book-title').textContent    = p.title;
         document.getElementById('book-text').textContent     = p.text;
-        document.getElementById('book-page-num').textContent = `${bookPageIndex+1} / ${BOOK_PAGES.length}`;
+        document.getElementById('book-page-num').textContent = `${bookPageIndex+1} / ${currentBookPages.length}`;
     }
-    document.getElementById('book-prev').onclick  = () => { bookPageIndex = (bookPageIndex - 1 + BOOK_PAGES.length) % BOOK_PAGES.length; renderPage(); };
-    document.getElementById('book-next').onclick  = () => { bookPageIndex = (bookPageIndex + 1) % BOOK_PAGES.length; renderPage(); };
+    document.getElementById('book-prev').onclick  = () => { bookPageIndex = (bookPageIndex - 1 + currentBookPages.length) % currentBookPages.length; renderPage(); };
+    document.getElementById('book-next').onclick  = () => { bookPageIndex = (bookPageIndex + 1) % currentBookPages.length; renderPage(); };
     document.getElementById('book-close').onclick = closeBook;
     renderPage();
     return el;
@@ -298,11 +340,14 @@ let bookOverlay = null;
 
 function openBook() {
     if (!bookOverlay) bookOverlay = createBookOverlay();
-    bookOverlay.style.display = 'flex';
+    // Pick 5 random unique entries from the pool every time
+    const shuffled = [...ALL_BOOK_ENTRIES].sort(() => Math.random() - 0.5);
+    currentBookPages = shuffled.slice(0, 5);
     bookPageIndex = 0;
-    bookOverlay.querySelector('#book-title').textContent    = BOOK_PAGES[0].title;
-    bookOverlay.querySelector('#book-text').textContent     = BOOK_PAGES[0].text;
-    bookOverlay.querySelector('#book-page-num').textContent = `1 / ${BOOK_PAGES.length}`;
+    bookOverlay.style.display = 'flex';
+    bookOverlay.querySelector('#book-title').textContent    = currentBookPages[0].title;
+    bookOverlay.querySelector('#book-text').textContent     = currentBookPages[0].text;
+    bookOverlay.querySelector('#book-page-num').textContent = `1 / ${currentBookPages.length}`;
     controls.unlock();
 }
 function closeBook() {
