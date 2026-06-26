@@ -332,17 +332,18 @@ function createBookOverlay() {
     document.getElementById('book-prev').onclick  = () => { bookPageIndex = (bookPageIndex - 1 + currentBookPages.length) % currentBookPages.length; renderPage(); };
     document.getElementById('book-next').onclick  = () => { bookPageIndex = (bookPageIndex + 1) % currentBookPages.length; renderPage(); };
     document.getElementById('book-close').onclick = closeBook;
-    renderPage();
+    // NOTE: renderPage() is NOT called here — openBook() always sets currentBookPages first
     return el;
 }
 let bookOverlay = null;
 
 function openBook() {
-    if (!bookOverlay) bookOverlay = createBookOverlay();
-    // Pick 5 random unique entries from the pool every time
+    // Pick 5 random unique entries from the pool FIRST
     const shuffled = [...ALL_BOOK_ENTRIES].sort(() => Math.random() - 0.5);
     currentBookPages = shuffled.slice(0, 5);
     bookPageIndex = 0;
+    // Now safe to create overlay (renderPage won't run on empty array)
+    if (!bookOverlay) bookOverlay = createBookOverlay();
     bookOverlay.style.display = 'flex';
     bookOverlay.querySelector('#book-title').textContent    = currentBookPages[0].title;
     bookOverlay.querySelector('#book-text').textContent     = currentBookPages[0].text;
