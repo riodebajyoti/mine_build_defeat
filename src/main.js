@@ -289,32 +289,47 @@ const ALL_BOOK_ENTRIES = [
 let currentBookPages = [];
 let bookPageIndex = 0;
 
+// DOM refs — set once when overlay is created
+let bookTitleEl = null, bookTextEl = null, bookPageNumEl = null;
+
+function renderPage() {
+    if (!currentBookPages.length) return;
+    const p = currentBookPages[bookPageIndex];
+    bookTitleEl.textContent    = p.title;
+    bookTextEl.textContent     = p.text;
+    bookPageNumEl.textContent  = `${bookPageIndex + 1} / ${currentBookPages.length}`;
+}
+
 function createBookOverlay() {
     const el = document.createElement('div');
     el.id = 'book-overlay';
-    el.style.cssText = `
-        display:none; position:fixed; inset:0; z-index:2000;
-        background:rgba(0,0,0,0.75); display:none;
-        align-items:center; justify-content:center;
-    `;
+    // Use el.style directly — no duplicate display values
+    el.style.display         = 'none';
+    el.style.position        = 'fixed';
+    el.style.inset           = '0';
+    el.style.zIndex          = '2000';
+    el.style.background      = 'rgba(0,0,0,0.75)';
+    el.style.alignItems      = 'center';
+    el.style.justifyContent  = 'center';
+
     el.innerHTML = `
-        <div id="book-inner" style="
-            background: linear-gradient(135deg,#f5e6c8,#e8d5a0);
-            border: 4px solid #8B5E2A; border-radius:8px;
-            width:420px; max-width:90vw; padding:32px 36px;
+        <div style="
+            background:linear-gradient(135deg,#f5e6c8,#e8d5a0);
+            border:4px solid #8B5E2A; border-radius:8px;
+            width:440px; max-width:90vw; padding:32px 36px;
             box-shadow:0 8px 40px rgba(0,0,0,0.7);
             font-family:'Georgia',serif; color:#3a2000;
             position:relative;
         ">
             <div style="font-size:11px;opacity:0.6;margin-bottom:8px;letter-spacing:1px;">📖 BOOKSHELF — ANCIENT TOME</div>
-            <h2 id="book-title" style="margin:0 0 16px;font-size:20px;border-bottom:2px solid #8B5E2A;padding-bottom:10px;"></h2>
-            <p  id="book-text"  style="line-height:1.8;font-size:15px;margin:0 0 24px;"></p>
+            <h2 class="bk-title" style="margin:0 0 16px;font-size:20px;border-bottom:2px solid #8B5E2A;padding-bottom:10px;"></h2>
+            <p  class="bk-text"  style="line-height:1.8;font-size:15px;margin:0 0 24px;min-height:100px;"></p>
             <div style="display:flex;justify-content:space-between;align-items:center;">
-                <button id="book-prev" style="padding:8px 18px;background:#8B5E2A;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">◀ Prev</button>
-                <span id="book-page-num" style="font-size:12px;opacity:0.7;"></span>
-                <button id="book-next" style="padding:8px 18px;background:#8B5E2A;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">Next ▶</button>
+                <button class="bk-prev" style="padding:8px 18px;background:#8B5E2A;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">◀ Prev</button>
+                <span class="bk-num" style="font-size:12px;opacity:0.7;"></span>
+                <button class="bk-next" style="padding:8px 18px;background:#8B5E2A;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">Next ▶</button>
             </div>
-            <button id="book-close" style="
+            <button class="bk-close" style="
                 position:absolute;top:12px;right:14px;
                 background:none;border:none;font-size:22px;
                 cursor:pointer;color:#8B5E2A;font-weight:bold;
@@ -323,31 +338,30 @@ function createBookOverlay() {
     `;
     document.body.appendChild(el);
 
-    function renderPage() {
-        const p = currentBookPages[bookPageIndex];
-        document.getElementById('book-title').textContent    = p.title;
-        document.getElementById('book-text').textContent     = p.text;
-        document.getElementById('book-page-num').textContent = `${bookPageIndex+1} / ${currentBookPages.length}`;
-    }
-    document.getElementById('book-prev').onclick  = () => { bookPageIndex = (bookPageIndex - 1 + currentBookPages.length) % currentBookPages.length; renderPage(); };
-    document.getElementById('book-next').onclick  = () => { bookPageIndex = (bookPageIndex + 1) % currentBookPages.length; renderPage(); };
-    document.getElementById('book-close').onclick = closeBook;
-    // NOTE: renderPage() is NOT called here — openBook() always sets currentBookPages first
+    // Store refs by class — no getElementById conflicts
+    bookTitleEl   = el.querySelector('.bk-title');
+    bookTextEl    = el.querySelector('.bk-text');
+    bookPageNumEl = el.querySelector('.bk-num');
+
+    el.querySelector('.bk-prev').onclick  = () => { bookPageIndex = (bookPageIndex - 1 + currentBookPages.length) % currentBookPages.length; renderPage(); };
+    el.querySelector('.bk-next').onclick  = () => { bookPageIndex = (bookPageIndex + 1) % currentBookPages.length; renderPage(); };
+    el.querySelector('.bk-close').onclick = closeBook;
+
     return el;
 }
 let bookOverlay = null;
 
 function openBook() {
-    // Pick 5 random unique entries from the pool FIRST
+    // 1. Pick 5 random entries first
     const shuffled = [...ALL_BOOK_ENTRIES].sort(() => Math.random() - 0.5);
     currentBookPages = shuffled.slice(0, 5);
     bookPageIndex = 0;
-    // Now safe to create overlay (renderPage won't run on empty array)
+    // 2. Create overlay if first time (DOM refs get set inside)
     if (!bookOverlay) bookOverlay = createBookOverlay();
+    // 3. Render the first page
+    renderPage();
+    // 4. Show overlay
     bookOverlay.style.display = 'flex';
-    bookOverlay.querySelector('#book-title').textContent    = currentBookPages[0].title;
-    bookOverlay.querySelector('#book-text').textContent     = currentBookPages[0].text;
-    bookOverlay.querySelector('#book-page-num').textContent = `1 / ${currentBookPages.length}`;
     controls.unlock();
 }
 function closeBook() {
