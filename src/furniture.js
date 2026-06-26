@@ -318,51 +318,52 @@ function makeSofa(n='') {
 
     // Pick fabric color by variant
     const fabricColor =
-        n.includes('blue')  ? 0x2255CC :
-        n.includes('green') ? 0x2A7A30 :
-        n.includes('grey')  ? 0x808080 :
+        n.includes('blue')  ? 0x1A4A99 :
+        n.includes('green') ? 0x1A6B2A :
+        n.includes('grey')  ? 0x777777 :
         n.includes('white') ? 0xDDDDDD :
-        n.includes('black') ? 0x222222 :
-        0xBB2222; // red (default)
+        n.includes('black') ? 0x1A1A1A :
+        0xAA1A1A; // red (default)
 
-    const fabric  = mat(fabricColor, 0.9);
-    const cushion = mat(fabricColor, 0.7);
-    const dark    = mat(0x1A1A1A, 0.95);   // dark underside / legs
-    const piping  = mat(0x111111, 1.0);    // seam trim
+    const fabric  = mat(fabricColor, 0.85);
+    const cushion = mat(fabricColor, 0.65);
+    const frame   = mat(0x2A1A0A, 0.9);      // dark wood frame
+    const legs    = mat(0x1A0A00, 0.7, 0.2); // near-black legs
 
-    // ── Four short legs ──
-    [[-0.42, -0.42], [0.42, -0.42], [-0.42, 0.42], [0.42, 0.42]].forEach(([x, z]) => {
-        g.add(box(0.09, 0.12, 0.09, dark, x, 0.06, z));
+    // ── Four stubby legs ──
+    [[-0.38, -0.35], [0.38, -0.35], [-0.38, 0.35], [0.38, 0.35]].forEach(([x, z]) => {
+        g.add(box(0.08, 0.10, 0.08, legs, x, 0.05, z));
     });
 
-    // ── Base frame ──
-    g.add(box(0.94, 0.18, 0.88, dark, 0, 0.21, 0));
+    // ── Dark wood frame base ──
+    g.add(box(0.92, 0.14, 0.78, frame, 0, 0.17, 0));
 
-    // ── Seat (three cushions side-by-side) ──
-    [-0.28, 0, 0.28].forEach(x => {
-        g.add(box(0.27, 0.14, 0.70, cushion, x, 0.36, 0.06));
-        // cushion seam
-        g.add(box(0.27, 0.02, 0.02, piping,  x, 0.43, -0.28));
+    // ── Seat base ──
+    g.add(box(0.90, 0.06, 0.54, fabric, 0, 0.27, 0.06));
+
+    // ── Three puffy seat cushions with visible gaps ──
+    [-0.27, 0, 0.27].forEach(x => {
+        g.add(box(0.24, 0.14, 0.50, cushion, x, 0.34,  0.08)); // body
+        g.add(box(0.22, 0.04, 0.48, fabric,  x, 0.41,  0.08)); // puff top
     });
-    // seat top pad
-    g.add(box(0.92, 0.04, 0.68, fabric, 0, 0.43, 0.06));
 
-    // ── Back rest (tall padded panel) ──
-    g.add(box(0.94, 0.46, 0.14, fabric, 0, 0.68, -0.38));  // back body
-    // three back cushion bumps
-    [-0.28, 0, 0.28].forEach(x => {
-        g.add(box(0.26, 0.36, 0.06, cushion, x, 0.67, -0.32));
+    // ── TALL prominent backrest ──
+    g.add(box(0.92, 0.56, 0.12, frame,   0, 0.62, -0.34)); // back frame wall
+    [-0.27, 0, 0.27].forEach(x => {
+        g.add(box(0.25, 0.46, 0.10, cushion, x, 0.61, -0.29)); // cushion
+        g.add(box(0.23, 0.44, 0.04, fabric,  x, 0.61, -0.24)); // front face puff
     });
-    // top cap rail
-    g.add(box(0.98, 0.06, 0.18, fabric, 0, 0.94, -0.38));
+    g.add(box(0.96, 0.07, 0.16, frame, 0, 0.915, -0.34)); // top cap
 
-    // ── Left armrest ──
-    g.add(box(0.14, 0.44, 0.88, fabric, -0.50, 0.52, 0));
-    g.add(box(0.18, 0.06, 0.92, fabric, -0.50, 0.73, 0));  // top pad
+    // ── Left armrest (thick & chunky) ──
+    g.add(box(0.13, 0.48, 0.78, frame,  -0.465, 0.48,  0));
+    g.add(box(0.17, 0.06, 0.82, frame,  -0.465, 0.73,  0));   // cap
+    g.add(box(0.13, 0.03, 0.70, cushion,-0.465, 0.765, 0));   // cushion pad
 
-    // ── Right armrest ──
-    g.add(box(0.14, 0.44, 0.88, fabric,  0.50, 0.52, 0));
-    g.add(box(0.18, 0.06, 0.92, fabric,  0.50, 0.73, 0));  // top pad
+    // ── Right armrest (thick & chunky) ──
+    g.add(box(0.13, 0.48, 0.78, frame,   0.465, 0.48,  0));
+    g.add(box(0.17, 0.06, 0.82, frame,   0.465, 0.73,  0));
+    g.add(box(0.13, 0.03, 0.70, cushion, 0.465, 0.765, 0));
 
     return g;
 }
