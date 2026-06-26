@@ -233,6 +233,150 @@ function placeFurniture(point, normal, itemName) {
     placedFurniture.push(mesh);
 }
 
+// --- FURNITURE INTERACTION SYSTEM ---
+let isSitting   = false;   // player is seated on chair/sofa
+let seatMesh    = null;    // the furniture mesh being sat on
+let isSleeping  = false;   // player is sleeping in a bed
+
+// Book overlay — created once
+const BOOK_PAGES = [
+    { title: "Chapter I — The World",      text: "In the beginning there was nothing but stone and dirt. The first builders shaped the land with their bare hands, carving out mountains and valleys from the endless grey..." },
+    { title: "Chapter II — The Monsters",  text: "As night fell for the first time, shadowy creatures crawled from the darkness. The builders learned quickly: build high, stay lit, survive until morning." },
+    { title: "Chapter III — The Boss",     text: "Deep beneath the earth lives an ancient evil. It stirs when the land is disturbed — when five blocks of earth are torn from the ground, it wakes..." },
+    { title: "Chapter IV — The Crafters",  text: "With steel in hand and stone at their feet, a new generation of builders rose. They crafted not just shelters, but entire cities — monuments to their will to survive." },
+    { title: "The End?",                   text: "No story truly ends. Every block placed is a new sentence. Every night survived is a new chapter. The world is yours to write." },
+];
+let bookPageIndex = 0;
+
+function createBookOverlay() {
+    const el = document.createElement('div');
+    el.id = 'book-overlay';
+    el.style.cssText = `
+        display:none; position:fixed; inset:0; z-index:2000;
+        background:rgba(0,0,0,0.75); display:none;
+        align-items:center; justify-content:center;
+    `;
+    el.innerHTML = `
+        <div id="book-inner" style="
+            background: linear-gradient(135deg,#f5e6c8,#e8d5a0);
+            border: 4px solid #8B5E2A; border-radius:8px;
+            width:420px; max-width:90vw; padding:32px 36px;
+            box-shadow:0 8px 40px rgba(0,0,0,0.7);
+            font-family:'Georgia',serif; color:#3a2000;
+            position:relative;
+        ">
+            <div style="font-size:11px;opacity:0.6;margin-bottom:8px;letter-spacing:1px;">📖 BOOKSHELF — ANCIENT TOME</div>
+            <h2 id="book-title" style="margin:0 0 16px;font-size:20px;border-bottom:2px solid #8B5E2A;padding-bottom:10px;"></h2>
+            <p  id="book-text"  style="line-height:1.8;font-size:15px;margin:0 0 24px;"></p>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <button id="book-prev" style="padding:8px 18px;background:#8B5E2A;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">◀ Prev</button>
+                <span id="book-page-num" style="font-size:12px;opacity:0.7;"></span>
+                <button id="book-next" style="padding:8px 18px;background:#8B5E2A;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">Next ▶</button>
+            </div>
+            <button id="book-close" style="
+                position:absolute;top:12px;right:14px;
+                background:none;border:none;font-size:22px;
+                cursor:pointer;color:#8B5E2A;font-weight:bold;
+            ">✕</button>
+        </div>
+    `;
+    document.body.appendChild(el);
+
+    function renderPage() {
+        const p = BOOK_PAGES[bookPageIndex];
+        document.getElementById('book-title').textContent    = p.title;
+        document.getElementById('book-text').textContent     = p.text;
+        document.getElementById('book-page-num').textContent = `${bookPageIndex+1} / ${BOOK_PAGES.length}`;
+    }
+    document.getElementById('book-prev').onclick  = () => { bookPageIndex = (bookPageIndex - 1 + BOOK_PAGES.length) % BOOK_PAGES.length; renderPage(); };
+    document.getElementById('book-next').onclick  = () => { bookPageIndex = (bookPageIndex + 1) % BOOK_PAGES.length; renderPage(); };
+    document.getElementById('book-close').onclick = closeBook;
+    renderPage();
+    return el;
+}
+let bookOverlay = null;
+
+function openBook() {
+    if (!bookOverlay) bookOverlay = createBookOverlay();
+    bookOverlay.style.display = 'flex';
+    bookPageIndex = 0;
+    bookOverlay.querySelector('#book-title').textContent    = BOOK_PAGES[0].title;
+    bookOverlay.querySelector('#book-text').textContent     = BOOK_PAGES[0].text;
+    bookOverlay.querySelector('#book-page-num').textContent = `1 / ${BOOK_PAGES.length}`;
+    controls.unlock();
+}
+function closeBook() {
+    if (bookOverlay) bookOverlay.style.display = 'none';
+    controls.lock();
+}
+
+// Sleep fade overlay
+function doSleep() {
+    if (isSleeping) return;
+    isSleeping = true;
+    const fade = document.createElement('div');
+    fade.style.cssText = `position:fixed;inset:0;background:#000;opacity:0;z-index:1999;pointer-events:none;transition:opacity 1.5s ease;`;
+    document.body.appendChild(fade);
+    requestAnimationFrame(() => { fade.style.opacity = '1'; });
+    setTimeout(() => {
+        // Skip to morning
+        worldTime = 'MORNING';
+        timeCycleTimer = 0;
+        enableMonstersSpawning = false;
+        enableAnimalsSpawning  = true;
+        updateLighting();
+        weather.setWeather('clear', scene, ambientLight, sunLight);
+        updateWeatherHUD();
+        // Restore HP & energy
+        state.hp     = Math.min(100, state.hp + 40);
+        state.energy = Math.min(100, state.energy + 60);
+        state.notify();
+        // Fade back in
+        fade.style.opacity = '0';
+        setTimeout(() => { document.body.removeChild(fade); isSleeping = false; }, 1500);
+        state.showHelperMsg('You slept through the night. Morning! HP and energy restored.');
+    }, 1800);
+}
+
+// Sit / stand logic
+function sitOn(mesh) {
+    if (isSitting) return;
+    isSitting = true;
+    seatMesh  = mesh;
+    // Snap camera to seated position above the mesh
+    const pos = mesh.position;
+    camera.position.set(pos.x, pos.y + 0.95, pos.z);
+    velocity.set(0, 0, 0);
+    state.showHelperMsg('Sitting — press E or Space to stand up');
+}
+function standUp() {
+    if (!isSitting) return;
+    isSitting = false;
+    camera.position.y += 0.6; // nudge up so you don't clip the seat
+    seatMesh = null;
+    state.showHelperMsg('You stood up.');
+}
+
+// Main interaction dispatcher — called on right-click on placed furniture
+function interactFurniture(mesh) {
+    const name = (mesh.userData.itemName || '').toLowerCase();
+    if (name.includes('chair') || name.includes('sofa')) {
+        if (isSitting) { standUp(); }
+        else           { sitOn(mesh); }
+    } else if (name.includes('bookshelf')) {
+        openBook();
+    } else if (name.includes('bed') || BED_NAMES.has(name)) {
+        if (worldTime === 'NIGHT' || gameMode === 'creative') {
+            doSleep();
+        } else {
+            state.showHelperMsg('You can only sleep at night!');
+        }
+    } else {
+        state.showHelperMsg(`You examine the ${mesh.userData.itemName}.`);
+    }
+}
+
+
 // Game Rules State
 let worldTime = 'MORNING';
 let timeCycleTimer = 0;
@@ -886,12 +1030,16 @@ const onKeyDown = (event) => {
         case 'ArrowLeft': moveLeft = true; break;
         case 'ArrowRight': moveRight = true; break;
         case 'Space': 
+            if (isSitting) { standUp(); break; }
             if (flyMode) {
                 moveUp = true;
             } else if (canJump === true) {
                 velocity.y += JUMP_FORCE;
                 canJump = false;
             }
+            break;
+        case 'KeyE':
+            if (isSitting) standUp();
             break;
         case 'ShiftLeft':
         case 'ShiftRight':
@@ -1082,7 +1230,27 @@ document.addEventListener('mousedown', (event) => {
                 boss.activate();
                 bossSpawned = true;
             }
-        } else if (event.button === 2 && !isAccessory) { // RIGHT CLICK: PLACE on surface
+        } else if (event.button === 2 && !isAccessory) { // RIGHT CLICK: interact or place
+            // First check if right-clicking ON placed furniture → interact with it
+            const furnitureInteractHits = raycaster.intersectObjects(placedFurniture, true);
+            if (furnitureInteractHits.length > 0) {
+                let hitMesh = furnitureInteractHits[0].object;
+                while (hitMesh.parent && !hitMesh.userData.itemName) hitMesh = hitMesh.parent;
+                if (hitMesh.userData.itemName) {
+                    interactFurniture(hitMesh);
+                    return;
+                }
+            }
+            // Also check placed beds
+            const bedInteractHits = raycaster.intersectObjects(placedBeds, true);
+            if (bedInteractHits.length > 0) {
+                if (worldTime === 'NIGHT' || gameMode === 'creative') {
+                    doSleep();
+                } else {
+                    state.showHelperMsg('You can only sleep at night!');
+                }
+                return;
+            }
             const iName = currentItem?.name ?? '';
             if (BED_NAMES.has(iName.toLowerCase())) {
                 placeBed(intersection.point, intersection.face.normal, iName);
@@ -1130,7 +1298,14 @@ function animate() {
 
     if (state.isPointerLocked) {
         // Physics & Movement
-        if (flyMode) {
+        // If sitting, lock camera to seat and skip all movement
+        if (isSitting && seatMesh) {
+            const pos = seatMesh.position;
+            camera.position.x = pos.x;
+            camera.position.z = pos.z;
+            camera.position.y = pos.y + 0.95;
+            velocity.set(0, 0, 0);
+        } else if (flyMode) {
             // Flight mode - no gravity, direct movement control with collision
             const flyDir = new THREE.Vector3();
             
