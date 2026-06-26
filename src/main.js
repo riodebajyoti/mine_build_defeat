@@ -247,7 +247,6 @@ const ALL_BOOK_ENTRIES = [
     { title: "The Ancient Boss",          text: "Deep beneath the earth lives an ancient evil. It stirs when five blocks of earth are torn from the ground. Nobody who has woken it has lived to tell the full tale." },
     { title: "The Age of Crafters",       text: "With steel in hand and stone at their feet, a new generation of builders rose. They crafted not just shelters, but entire cities — monuments to their will to survive." },
     { title: "The Endless World",         text: "No story truly ends here. Every block placed is a new sentence. Every night survived is a new chapter. The world is yours to write." },
-    { title: "The HOLE_ZONE",             text: "Dig too deep and gravity itself breaks. Below y=-10 the laws of physics no longer apply. Explorers have reported floating freely in the dark — some never came back up." },
     { title: "Legend of the Storm",       text: "Every night in survival, the sky cracks open and a storm rages. The monsters grow bolder in the rain. Old builders say the storm feeds them — makes them stronger, faster, angrier." },
     { title: "The Dragon's Egg",          text: "There is said to be a single dragon egg hidden in the world. Those who find it never speak of what they saw afterwards. The egg is always warm to the touch." },
     // ── Survival Tips ──
@@ -1456,11 +1455,7 @@ function animate() {
             const dz = rightVec.z * (-velocity.x * delta) + fwdVec.z * (-velocity.z * delta);
             const moveMag = Math.abs(dx) + Math.abs(dz);
 
-            if (!gravityEnabled) {
-                // HOLE_ZONE: no gravity, no wall collision — player flies freely through terrain
-                camera.position.x += dx;
-                camera.position.z += dz;
-            } else if (!wallCollides(camera.position.x + dx, camera.position.z + dz)) {
+            if (!wallCollides(camera.position.x + dx, camera.position.z + dz)) {
                 camera.position.x += dx;
                 camera.position.z += dz;
             } else if (moveMag > 0.001 && !wallCollides(camera.position.x + dx, camera.position.z + dz, camera.position.y + 1.1)) {
@@ -1475,21 +1470,11 @@ function animate() {
                 if (!wallCollides(camera.position.x, camera.position.z + dz)) camera.position.z += dz;
             }
             
-            // HOLE_ZONE logic
-            if (camera.position.y < -10 && gravityEnabled) {
-                gravityEnabled = false;
-                // Only force night in survival mode — creative keeps its own day/night cycle
-                if (gameMode === 'survival') {
-                    worldTime = 'NIGHT';
-                    updateLighting();
-                }
-                state.showHelperMsg("Entered the HOLE_ZONE. Gravity disabled. Night descends...");
-            } else if (camera.position.y >= -10 && !gravityEnabled) {
-                gravityEnabled = true;
-                // Restore lighting to match current worldTime and reset cycle timer
-                updateLighting();
-                timeCycleTimer = 0;
-                state.showHelperMsg("Exited the HOLE_ZONE. Gravity restored.");
+            // Snap player back up if they fall too far below the world
+            if (camera.position.y < -20) {
+                camera.position.y = 5;
+                velocity.y = 0;
+                state.showHelperMsg('You fell out of the world and were respawned!');
             }
         }
 
@@ -1543,7 +1528,7 @@ function animate() {
         weather.update(delta, camera.position);
         
         // Time Cycle Logic
-        if (camera.position.y >= -10) { // Don't process time cycles while in HOLE_ZONE
+        if (true) { // Time cycle always runs
             timeCycleTimer += delta;
             if (timeCycleTimer >= 60) {
                 if (gameMode === 'survival' && worldTime === 'MORNING') {
