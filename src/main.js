@@ -1,3 +1,4 @@
+// v1.3.0 — sofa + chair furniture update
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { state } from './state.js';
