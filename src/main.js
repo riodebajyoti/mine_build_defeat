@@ -1243,11 +1243,17 @@ function animate() {
             // HOLE_ZONE logic
             if (camera.position.y < -10 && gravityEnabled) {
                 gravityEnabled = false;
-                worldTime = 'NIGHT';
-                updateLighting();
+                // Only force night in survival mode — creative keeps its own day/night cycle
+                if (gameMode === 'survival') {
+                    worldTime = 'NIGHT';
+                    updateLighting();
+                }
                 state.showHelperMsg("Entered the HOLE_ZONE. Gravity disabled. Night descends...");
             } else if (camera.position.y >= -10 && !gravityEnabled) {
                 gravityEnabled = true;
+                // Restore lighting to match current worldTime and reset cycle timer
+                updateLighting();
+                timeCycleTimer = 0;
                 state.showHelperMsg("Exited the HOLE_ZONE. Gravity restored.");
             }
         }
