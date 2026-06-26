@@ -16,6 +16,7 @@ export const FURNITURE_NAMES = new Set([
     'cauldron',
     'jukebox','note block',
     'lectern','loom','cartography table','composter',
+    'chair','oak chair','spruce chair','birch chair','jungle chair','acacia chair','dark oak chair',
 ]);
 
 // ─── tiny helpers ─────────────────────────────────────────────────────────────
@@ -260,6 +261,56 @@ function makeNoteBlock(isJukebox=false) {
     return g;
 }
 
+// ─── Chair ───────────────────────────────────────────────────────────────────
+function makeChair(n='') {
+    const g = new THREE.Group();
+
+    // Pick wood color by chair variant
+    const woodColor =
+        n.includes('spruce')  ? 0x5C3A1E :
+        n.includes('birch')   ? 0xD4B97A :
+        n.includes('jungle')  ? 0x9C6B3C :
+        n.includes('acacia')  ? 0xB5522B :
+        n.includes('dark oak')? 0x3B1F0A :
+        0x8B5E2A; // oak (default)
+
+    const wood = mat(woodColor, 0.85);
+    const seat = mat(woodColor, 0.7);
+    const cushion = mat(0xCC3030, 0.6); // red cushion
+
+    // ── Seat ──
+    g.add(box(0.72, 0.07, 0.66, seat,    0, 0.44,  0.05));
+    // cushion on seat
+    g.add(box(0.60, 0.04, 0.54, cushion, 0, 0.50,  0.05));
+
+    // ── Backrest frame ──
+    g.add(box(0.72, 0.06, 0.07, wood,    0, 0.86, -0.26)); // top rail
+    g.add(box(0.72, 0.06, 0.07, wood,    0, 0.58, -0.26)); // bottom rail
+    // three vertical slats
+    [-0.24, 0, 0.24].forEach(x => {
+        g.add(box(0.07, 0.34, 0.07, wood, x, 0.72, -0.26));
+    });
+
+    // ── Four legs ──
+    [[-0.30, -0.26], [0.30, -0.26],  // back legs (taller — support backrest)
+     [-0.30,  0.32], [0.30,  0.32]]  // front legs
+    .forEach(([x, z], i) => {
+        const legH  = i < 2 ? 0.88 : 0.44;  // back legs extend up for backrest posts
+        const baseY = legH / 2;
+        g.add(box(0.09, legH, 0.09, wood, x, baseY, z));
+    });
+
+    // ── Armrests ──
+    // horizontal arm pad
+    g.add(box(0.07, 0.05, 0.58, wood, -0.34, 0.63,  0.02));
+    g.add(box(0.07, 0.05, 0.58, wood,  0.34, 0.63,  0.02));
+    // armrest support post (front)
+    g.add(box(0.07, 0.20, 0.07, wood, -0.34, 0.53,  0.32));
+    g.add(box(0.07, 0.20, 0.07, wood,  0.34, 0.53,  0.32));
+
+    return g;
+}
+
 // ─── Generic styled cube (fallback) ───────────────────────────────────────────
 function makeStyledCube(itemName) {
     const g = new THREE.Group();
@@ -291,5 +342,6 @@ export function createFurnitureMesh(itemName) {
     if (n.includes('cauldron'))                             return makeCauldron();
     if (n.includes('jukebox'))                              return makeNoteBlock(true);
     if (n.includes('note block'))                           return makeNoteBlock(false);
+    if (n.includes('chair'))                                return makeChair(n);
     return makeStyledCube(itemName);
 }

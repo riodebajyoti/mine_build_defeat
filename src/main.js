@@ -704,6 +704,9 @@ const ITEM_EMOJI_MAP = {
     'Dragon Egg': '🥚', 'Nether Portal': '🌀', 'Saddle': '🐴', 'Horse Armor': '🐴',
     // Base blocks
     'Dirt': '🟫', 'Stone': '⬜', 'Wood': '🪵', 'Steel': '⚙️', 'Cores': '🔵', 'Grass': '🟩',
+    // Chairs
+    'Chair': '🪑', 'Oak Chair': '🪑', 'Spruce Chair': '🪑', 'Birch Chair': '🪑',
+    'Jungle Chair': '🪑', 'Acacia Chair': '🪑', 'Dark Oak Chair': '🪑',
 };
 
 const MINECRAFT_ITEMS = [
@@ -764,6 +767,10 @@ const MINECRAFT_ITEMS = [
     { name: 'Soul Lantern', cat: 'blocks' }, { name: 'Campfire', cat: 'blocks' },
     { name: 'Jukebox', cat: 'blocks' }, { name: 'Note Block', cat: 'blocks' },
     { name: 'Bell', cat: 'blocks' }, { name: 'Flower Pot', cat: 'blocks' },
+    { name: 'Chair', cat: 'blocks' }, { name: 'Oak Chair', cat: 'blocks' },
+    { name: 'Spruce Chair', cat: 'blocks' }, { name: 'Birch Chair', cat: 'blocks' },
+    { name: 'Jungle Chair', cat: 'blocks' }, { name: 'Acacia Chair', cat: 'blocks' },
+    { name: 'Dark Oak Chair', cat: 'blocks' },
     // Food
     { name: 'Apple', cat: 'food' }, { name: 'Golden Apple', cat: 'food' },
     { name: 'Enchanted Golden Apple', cat: 'food' }, { name: 'Bread', cat: 'food' },
