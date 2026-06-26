@@ -707,6 +707,9 @@ const ITEM_EMOJI_MAP = {
     // Chairs
     'Chair': '🪑', 'Oak Chair': '🪑', 'Spruce Chair': '🪑', 'Birch Chair': '🪑',
     'Jungle Chair': '🪑', 'Acacia Chair': '🪑', 'Dark Oak Chair': '🪑',
+    // Sofas
+    'Sofa': '🛋️', 'Red Sofa': '🛋️', 'Blue Sofa': '🛋️', 'Green Sofa': '🛋️',
+    'Grey Sofa': '🛋️', 'White Sofa': '🛋️', 'Black Sofa': '🛋️',
 };
 
 const MINECRAFT_ITEMS = [
@@ -771,6 +774,10 @@ const MINECRAFT_ITEMS = [
     { name: 'Spruce Chair', cat: 'blocks' }, { name: 'Birch Chair', cat: 'blocks' },
     { name: 'Jungle Chair', cat: 'blocks' }, { name: 'Acacia Chair', cat: 'blocks' },
     { name: 'Dark Oak Chair', cat: 'blocks' },
+    { name: 'Sofa', cat: 'blocks' }, { name: 'Red Sofa', cat: 'blocks' },
+    { name: 'Blue Sofa', cat: 'blocks' }, { name: 'Green Sofa', cat: 'blocks' },
+    { name: 'Grey Sofa', cat: 'blocks' }, { name: 'White Sofa', cat: 'blocks' },
+    { name: 'Black Sofa', cat: 'blocks' },
     // Food
     { name: 'Apple', cat: 'food' }, { name: 'Golden Apple', cat: 'food' },
     { name: 'Enchanted Golden Apple', cat: 'food' }, { name: 'Bread', cat: 'food' },

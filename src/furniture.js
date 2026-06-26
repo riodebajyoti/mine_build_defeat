@@ -17,6 +17,7 @@ export const FURNITURE_NAMES = new Set([
     'jukebox','note block',
     'lectern','loom','cartography table','composter',
     'chair','oak chair','spruce chair','birch chair','jungle chair','acacia chair','dark oak chair',
+    'sofa','red sofa','blue sofa','green sofa','grey sofa','white sofa','black sofa',
 ]);
 
 // ─── tiny helpers ─────────────────────────────────────────────────────────────
@@ -311,6 +312,61 @@ function makeChair(n='') {
     return g;
 }
 
+// ─── Sofa ─────────────────────────────────────────────────────────────────────
+function makeSofa(n='') {
+    const g = new THREE.Group();
+
+    // Pick fabric color by variant
+    const fabricColor =
+        n.includes('blue')  ? 0x2255CC :
+        n.includes('green') ? 0x2A7A30 :
+        n.includes('grey')  ? 0x808080 :
+        n.includes('white') ? 0xDDDDDD :
+        n.includes('black') ? 0x222222 :
+        0xBB2222; // red (default)
+
+    const fabric  = mat(fabricColor, 0.9);
+    const cushion = mat(fabricColor, 0.7);
+    const dark    = mat(0x1A1A1A, 0.95);   // dark underside / legs
+    const piping  = mat(0x111111, 1.0);    // seam trim
+
+    // ── Four short legs ──
+    [[-0.42, -0.42], [0.42, -0.42], [-0.42, 0.42], [0.42, 0.42]].forEach(([x, z]) => {
+        g.add(box(0.09, 0.12, 0.09, dark, x, 0.06, z));
+    });
+
+    // ── Base frame ──
+    g.add(box(0.94, 0.18, 0.88, dark, 0, 0.21, 0));
+
+    // ── Seat (three cushions side-by-side) ──
+    [-0.28, 0, 0.28].forEach(x => {
+        g.add(box(0.27, 0.14, 0.70, cushion, x, 0.36, 0.06));
+        // cushion seam
+        g.add(box(0.27, 0.02, 0.02, piping,  x, 0.43, -0.28));
+    });
+    // seat top pad
+    g.add(box(0.92, 0.04, 0.68, fabric, 0, 0.43, 0.06));
+
+    // ── Back rest (tall padded panel) ──
+    g.add(box(0.94, 0.46, 0.14, fabric, 0, 0.68, -0.38));  // back body
+    // three back cushion bumps
+    [-0.28, 0, 0.28].forEach(x => {
+        g.add(box(0.26, 0.36, 0.06, cushion, x, 0.67, -0.32));
+    });
+    // top cap rail
+    g.add(box(0.98, 0.06, 0.18, fabric, 0, 0.94, -0.38));
+
+    // ── Left armrest ──
+    g.add(box(0.14, 0.44, 0.88, fabric, -0.50, 0.52, 0));
+    g.add(box(0.18, 0.06, 0.92, fabric, -0.50, 0.73, 0));  // top pad
+
+    // ── Right armrest ──
+    g.add(box(0.14, 0.44, 0.88, fabric,  0.50, 0.52, 0));
+    g.add(box(0.18, 0.06, 0.92, fabric,  0.50, 0.73, 0));  // top pad
+
+    return g;
+}
+
 // ─── Generic styled cube (fallback) ───────────────────────────────────────────
 function makeStyledCube(itemName) {
     const g = new THREE.Group();
@@ -343,5 +399,6 @@ export function createFurnitureMesh(itemName) {
     if (n.includes('jukebox'))                              return makeNoteBlock(true);
     if (n.includes('note block'))                           return makeNoteBlock(false);
     if (n.includes('chair'))                                return makeChair(n);
+    if (n.includes('sofa'))                                 return makeSofa(n);
     return makeStyledCube(itemName);
 }
