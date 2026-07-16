@@ -86,6 +86,11 @@ export class VoxelWorld {
                 const distToPuddle3 = Math.sqrt(Math.pow(worldX + 15, 2) + Math.pow(worldZ + 30, 2));
                 const insidePuddle = (distToPuddle1 < 3.5 || distToPuddle2 < 2.5 || distToPuddle3 < 3.0);
                 
+                // Carve a depression at puddle locations to guarantee they hold water
+                if (insidePuddle && distToMountain >= 25) {
+                    height = 2;
+                }
+                
                 const hasWater = (height <= waterLevel && distToMountain >= 25 && insidePuddle);
 
                 for (let y = -15; y < height; y++) {
