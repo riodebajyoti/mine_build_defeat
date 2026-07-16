@@ -80,18 +80,20 @@ export class VoxelWorld {
 
                 const waterLevel = 3;
                 
-                // Define 3 small, sparse puddle locations in the world
-                const distToPuddle1 = Math.sqrt(Math.pow(worldX - 25, 2) + Math.pow(worldZ - 25, 2));
-                const distToPuddle2 = Math.sqrt(Math.pow(worldX + 25, 2) + Math.pow(worldZ - 20, 2));
-                const distToPuddle3 = Math.sqrt(Math.pow(worldX + 15, 2) + Math.pow(worldZ + 30, 2));
-                const insidePuddle = (distToPuddle1 < 3.5 || distToPuddle2 < 2.5 || distToPuddle3 < 3.0);
+                // Define a single large sloping lake far from spawn center (0,0)
+                const lakeCenterX = 35;
+                const lakeCenterZ = -35;
+                const lakeRadius = 16.0;
+                const distToLake = Math.sqrt(Math.pow(worldX - lakeCenterX, 2) + Math.pow(worldZ - lakeCenterZ, 2));
+                const insideLake = (distToLake < lakeRadius);
                 
-                // Carve a depression at puddle locations to guarantee they hold water
-                if (insidePuddle && distToMountain >= 25) {
-                    height = 2;
+                // Carve a sloping lake bed (deeper at center)
+                if (insideLake && distToMountain >= 25) {
+                    const depthFactor = (1.0 - distToLake / lakeRadius); // 0.0 at edge, 1.0 at center
+                    height = Math.round(THREE.MathUtils.lerp(2, -2, depthFactor));
                 }
                 
-                const hasWater = (height <= waterLevel && distToMountain >= 25 && insidePuddle);
+                const hasWater = (height <= waterLevel && distToMountain >= 25 && insideLake);
 
                 for (let y = -15; y < height; y++) {
                     let type;

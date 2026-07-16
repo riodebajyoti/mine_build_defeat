@@ -1194,6 +1194,7 @@ let moveDown = false;
 let canJump = false;
 let velocity = new THREE.Vector3();
 let direction = new THREE.Vector3();
+let isInWater = false;
 
 const onKeyDown = (event) => {
     if (document.activeElement === accessorySearch) {
@@ -1221,6 +1222,8 @@ const onKeyDown = (event) => {
             if (isSitting) { standUp(); break; }
             if (flyMode) {
                 moveUp = true;
+            } else if (isInWater) {
+                velocity.y = 2.5; // Swim up
             } else if (canJump === true) {
                 velocity.y += JUMP_FORCE;
                 canJump = false;
@@ -1275,8 +1278,9 @@ function checkCollision(newPos, playerRadius = 0.3) {
         for (let dy = -1; dy <= 1; dy++) {
             for (let dz = -1; dz <= 1; dz++) {
                 const key = `${checkX + dx},${checkY + dy},${checkZ + dz}`;
-                if (world.blocks.has(key)) {
-                    return true; // Collision detected
+                const blockType = world.blocks.get(key);
+                if (blockType && blockType !== 'Water') {
+                    return true; // Collision detected (solid blocks only)
                 }
             }
         }
@@ -1491,6 +1495,11 @@ function animate() {
 
     if (state.isPointerLocked) {
         // Physics & Movement
+        const pBX = Math.round(camera.position.x);
+        const pBY = Math.round(camera.position.y);
+        const pBZ = Math.round(camera.position.z);
+        isInWater = world.blocks.get(`${pBX},${pBY},${pBZ}`) === 'Water' || 
+                    world.blocks.get(`${pBX},${pBY - 1},${pBZ}`) === 'Water';
         // If sitting, lock camera to seat and skip all movement
         if (isSitting && seatMesh) {
             const pos = seatMesh.position;
@@ -1549,7 +1558,12 @@ function animate() {
             // Normal walking mode
             velocity.x -= velocity.x * 10.0 * delta;
             velocity.z -= velocity.z * 10.0 * delta;
-            if (gravityEnabled) {
+            
+            if (isInWater) {
+                // Water buoyancy/sinking physics
+                velocity.y -= (GRAVITY * 0.15) * delta; // slow sinking
+                if (velocity.y < -1.2) velocity.y = -1.2; 
+            } else if (gravityEnabled) {
                 velocity.y -= GRAVITY * delta;
             } else {
                 // SLOW_FALL effect
@@ -1561,8 +1575,10 @@ function animate() {
             direction.x = Number(moveRight) - Number(moveLeft);
             direction.normalize();
 
-            if (moveForward || moveBackward) velocity.z -= direction.z * MOVE_SPEED * 10.0 * delta;
-            if (moveLeft || moveRight) velocity.x -= direction.x * MOVE_SPEED * 10.0 * delta;
+            const currentMoveSpeed = isInWater ? MOVE_SPEED * 0.4 : MOVE_SPEED;
+
+            if (moveForward || moveBackward) velocity.z -= direction.z * currentMoveSpeed * 10.0 * delta;
+            if (moveLeft || moveRight) velocity.x -= direction.x * currentMoveSpeed * 10.0 * delta;
 
             // Apply vertical velocity then snap to ground BEFORE horizontal movement.
             // This ensures wallCollides always uses the correct snapped camera.y, preventing
