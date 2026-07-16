@@ -87,10 +87,16 @@ export class VoxelWorld {
                 const distToLake = Math.sqrt(Math.pow(worldX - lakeCenterX, 2) + Math.pow(worldZ - lakeCenterZ, 2));
                 const insideLake = (distToLake < lakeRadius);
                 
+                // Embankment / containing shoreline rim just outside the lake radius
+                const isRim = (distToLake >= lakeRadius && distToLake < lakeRadius + 2.5);
+                
                 // Carve a sloping lake bed (deeper at center)
                 if (insideLake && distToMountain >= 25) {
                     const depthFactor = (1.0 - distToLake / lakeRadius); // 0.0 at edge, 1.0 at center
                     height = Math.round(THREE.MathUtils.lerp(2, -2, depthFactor));
+                } else if (isRim && distToMountain >= 25) {
+                    // Force containing wall elevation to be at least y = 4 (1 block above water level 3)
+                    height = Math.max(4, height);
                 }
                 
                 const hasWater = (height <= waterLevel && distToMountain >= 25 && insideLake);
@@ -105,7 +111,7 @@ export class VoxelWorld {
                     } else {
                         // Regular terrain
                         if (y === height - 1) {
-                            type = hasWater ? 'Dirt' : 'Grass';
+                            type = hasWater ? 'Dirt' : (isRim ? 'Dirt' : 'Grass');
                         } else {
                             type = y > height - 4 ? 'Dirt' : 'Stone';
                         }
