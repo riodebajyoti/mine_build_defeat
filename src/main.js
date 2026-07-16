@@ -125,6 +125,13 @@ sunLight.shadow.mapSize.width = 2048;
 sunLight.shadow.mapSize.height = 2048;
 scene.add(sunLight);
 
+const moonLight = new THREE.DirectionalLight(0x5577ff, 0.0);
+moonLight.position.set(-50, -100, -50);
+moonLight.castShadow = true;
+moonLight.shadow.mapSize.width = 1024;
+moonLight.shadow.mapSize.height = 1024;
+scene.add(moonLight);
+
 // --- VOXEL WORLD ---
 const world = new VoxelWorld(scene);
 // Pre-generate a 3x3 grid around player to ensure stable collision on start
@@ -379,11 +386,10 @@ function doSleep() {
     requestAnimationFrame(() => { fade.style.opacity = '1'; });
     setTimeout(() => {
         // Skip to morning
-        worldTime = 'MORNING';
-        timeCycleTimer = 0;
+        timeOfDay = 0.075;
         enableMonstersSpawning = false;
         enableAnimalsSpawning  = true;
-        updateLighting();
+        updateLighting(1.0);
         weather.setWeather('clear', scene, ambientLight, sunLight);
         updateWeatherHUD();
         // Restore HP & energy
@@ -438,18 +444,22 @@ function interactFurniture(mesh) {
 
 // Game Rules State
 let worldTime = 'MORNING';
-let timeCycleTimer = 0;
+let timeOfDay = 0.2; // 0.0 to 1.0 cycle (0.2 is morning)
 let enableMonstersSpawning = false;
 let enableAnimalsSpawning = true;
 let gravityEnabled = true;
 let flyMode = false;
 
+// Color gradients for different times of day
+const skyColorDay = new THREE.Color(0x87CEEB);     // Sky blue
+const skyColorSunset = new THREE.Color(0xe06030);  // Sunset Orange
+const skyColorNight = new THREE.Color(0x050510);   // Dark night sky
+
 function initGameRules(mode) {
-    worldTime = 'MORNING';
-    timeCycleTimer = 0;
+    timeOfDay = 0.2;
     gravityEnabled = true;
     flyMode = false;
-    updateLighting();
+    updateLighting(1.0);
     
     if (mode === 'survival') {
         enableAnimalsSpawning = true;
@@ -460,17 +470,114 @@ function initGameRules(mode) {
     }
 }
 
-function updateLighting() {
-    if (worldTime === 'MORNING') {
-        ambientLight.intensity = 1.5;
-        scene.background.setHex(0x87CEEB); // Sky blue
-        scene.fog.color.setHex(0x87CEEB);
-        sunLight.intensity = 2.0;
+function updateLighting(delta) {
+    // Increment timeOfDay. Cycle takes 1200 seconds (20 real minutes).
+    // Allow passing delta=1.0 to snap time instantly (e.g. commands/sleep/clicks)
+    if (delta > 0.0 && delta < 1.0) {
+        timeOfDay += delta / 1200.0;
+        if (timeOfDay >= 1.0) timeOfDay -= 1.0;
+    }
+
+    // Piecewise map timeOfDay to sun angle theta (0 to 2*PI)
+    // 0.0 to 0.65 is above horizon (Sunrise + Day + Sunset = 13 mins = 65% of cycle)
+    // 0.65 to 1.0 is below horizon (Night = 7 mins = 35% of cycle)
+    let theta;
+    if (timeOfDay <= 0.65) {
+        theta = (timeOfDay / 0.65) * Math.PI;
     } else {
-        ambientLight.intensity = 0.4;
-        scene.background.setHex(0x0a0a1a); // Night sky
-        scene.fog.color.setHex(0x0a0a1a);
-        sunLight.intensity = 0.2;
+        theta = Math.PI + ((timeOfDay - 0.65) / 0.35) * Math.PI;
+    }
+
+    const radius = 120;
+    sunLight.position.set(radius * Math.cos(theta), radius * Math.sin(theta), 30);
+    moonLight.position.set(-radius * Math.cos(theta), -radius * Math.sin(theta), -30);
+
+    let targetAmbientIntensity = 0.4;
+    let targetSunIntensity = 0.0;
+    let targetMoonIntensity = 0.0;
+    let targetSkyColor = new THREE.Color();
+    let currentPhase = 'DAY';
+
+    // Phase identification based on Minecraft timeline
+    if (timeOfDay >= 0.075 && timeOfDay < 0.575) {
+        // Full Day (10 minutes)
+        currentPhase = 'DAY';
+        targetAmbientIntensity = 1.4;
+        targetSunIntensity = 2.0;
+        targetMoonIntensity = 0.0;
+        targetSkyColor.copy(skyColorDay);
+    } else if (timeOfDay < 0.075) {
+        // Sunrise (1.5 minutes)
+        currentPhase = 'SUNRISE';
+        const t = timeOfDay / 0.075; // 0.0 to 1.0
+        targetAmbientIntensity = THREE.MathUtils.lerp(0.3, 1.4, t);
+        targetSunIntensity = THREE.MathUtils.lerp(0.0, 2.0, t);
+        targetMoonIntensity = THREE.MathUtils.lerp(0.6, 0.0, t);
+        if (t < 0.5) {
+            targetSkyColor.lerpColors(skyColorNight, skyColorSunset, t * 2.0);
+        } else {
+            targetSkyColor.lerpColors(skyColorSunset, skyColorDay, (t - 0.5) * 2.0);
+        }
+    } else if (timeOfDay >= 0.575 && timeOfDay < 0.65) {
+        // Sunset (1.5 minutes)
+        currentPhase = 'SUNSET';
+        const t = (timeOfDay - 0.575) / 0.075; // 0.0 to 1.0
+        targetAmbientIntensity = THREE.MathUtils.lerp(1.4, 0.3, t);
+        targetSunIntensity = THREE.MathUtils.lerp(2.0, 0.0, t);
+        targetMoonIntensity = THREE.MathUtils.lerp(0.0, 0.6, t);
+        if (t < 0.5) {
+            targetSkyColor.lerpColors(skyColorDay, skyColorSunset, t * 2.0);
+        } else {
+            targetSkyColor.lerpColors(skyColorSunset, skyColorNight, (t - 0.5) * 2.0);
+        }
+    } else {
+        // Night (7 minutes)
+        currentPhase = 'NIGHT';
+        targetAmbientIntensity = 0.3;
+        targetSunIntensity = 0.0;
+        targetMoonIntensity = 0.6;
+        targetSkyColor.copy(skyColorNight);
+    }
+
+    // Apply lighting intensities
+    const lerpFactor = delta >= 1.0 ? 1.0 : delta * 2.0;
+    ambientLight.intensity = THREE.MathUtils.lerp(ambientLight.intensity, targetAmbientIntensity, lerpFactor);
+    sunLight.intensity = THREE.MathUtils.lerp(sunLight.intensity, targetSunIntensity, lerpFactor);
+    moonLight.intensity = THREE.MathUtils.lerp(moonLight.intensity, targetMoonIntensity, lerpFactor);
+
+    // Apply background and fog colors
+    const lerpedSkyColor = new THREE.Color();
+    lerpedSkyColor.lerpColors(scene.background, targetSkyColor, lerpFactor);
+    scene.background.copy(lerpedSkyColor);
+    scene.fog.color.copy(lerpedSkyColor);
+
+    // Sync worldTime state variable for game loop spawning logic
+    const prevWorldTime = worldTime;
+    worldTime = (currentPhase === 'NIGHT') ? 'NIGHT' : 'MORNING';
+
+    if (worldTime === 'NIGHT') {
+        enableAnimalsSpawning = false;
+        enableMonstersSpawning = true;
+    } else {
+        enableAnimalsSpawning = true;
+        enableMonstersSpawning = false;
+    }
+
+    // Trigger state message on dawn/dusk transitions
+    if (worldTime !== prevWorldTime) {
+        if (worldTime === 'NIGHT') {
+            if (gameMode === 'survival') {
+                weather.setWeather('storm', scene, ambientLight, sunLight);
+                state.showHelperMsg("Night falls. A storm rages. Monsters emerge.");
+            } else {
+                weather.setWeather('rain', scene, ambientLight, sunLight);
+                state.showHelperMsg("Night falls.");
+            }
+        } else {
+            weather.setWeather('clear', scene, ambientLight, sunLight);
+            state.showHelperMsg("Morning breaks. The storm has passed.");
+        }
+        updateWeatherHUD();
     }
 }
 function updateWeatherHUD() {
@@ -548,7 +655,16 @@ controls.addEventListener('unlock', () => {
         overlay.style.display = 'flex';
     }
 });
-
+// Manual day/night cycle advance button
+const timeToggleBtn = document.getElementById('time-toggle');
+if (timeToggleBtn) {
+  timeToggleBtn.addEventListener('click', () => {
+    timeOfDay = (timeOfDay + 0.25) % 1.0;
+    updateLighting(1.0);
+    state.showHelperMsg(`Time advanced to ${Math.round(timeOfDay * 24)}:00.`);
+  });
+}
+// End manual toggle
 // --- ACCESSORIES MENU ---
 const accessoriesMenu = document.getElementById('accessories-menu');
 const closeAccessoriesBtn = document.getElementById('close-accessories-btn');
@@ -772,6 +888,28 @@ async function parseAgentCommand(cmdString) {
                 }
             } else {
                 appendAgentMessage(`Current weather: ${weather.getStatus()} ${weather.getIcon()}. Usage: weather <clear|rain|storm>`);
+            }
+            break;
+        case 'time':
+            if (args.length > 1) {
+                const targetTime = args[1].toLowerCase();
+                if (targetTime === 'day' || targetTime === 'morning') {
+                    timeOfDay = 0.075; // Start of Day
+                    updateLighting(1.0);
+                    appendAgentMessage("Time set to day.");
+                } else if (targetTime === 'night') {
+                    timeOfDay = 0.65; // Start of Night
+                    updateLighting(1.0);
+                    appendAgentMessage("Time set to night.");
+                } else if (!isNaN(parseFloat(targetTime))) {
+                    timeOfDay = parseFloat(targetTime) % 1.0;
+                    updateLighting(1.0);
+                    appendAgentMessage(`Time set to ${timeOfDay.toFixed(2)}.`);
+                } else {
+                    appendAgentMessage("Usage: time <day|night|number>");
+                }
+            } else {
+                appendAgentMessage(`Current time: ${timeOfDay.toFixed(2)} (${Math.round(timeOfDay * 24)}:00). Usage: time <day|night|number>`);
             }
             break;
         case 'give':
@@ -1110,6 +1248,11 @@ const onKeyDown = (event) => {
         case 'Digit4': state.setSelected(3); break;
         case 'Digit5': state.setSelected(4); break;
         case 'KeyC': state.craft('Steel'); break;
+        case 'KeyL':
+            timeOfDay = (timeOfDay + 0.25) % 1.0;
+            updateLighting(1.0);
+            state.showHelperMsg(`Time advanced to ${Math.round(timeOfDay * 24)}:00.`);
+            break;
     }
 };
 
@@ -1542,42 +1685,8 @@ function animate() {
         world.update(delta, camera.position);
         weather.update(delta, camera.position);
         
-        // Time Cycle Logic
-        if (true) { // Time cycle always runs
-            timeCycleTimer += delta;
-            if (timeCycleTimer >= 60) {
-                if (gameMode === 'survival' && worldTime === 'MORNING') {
-                    // ON_TIMER_COMPLETE (60 seconds)
-                    worldTime = 'NIGHT';
-                    enableAnimalsSpawning = false;
-                    enableMonstersSpawning = true;
-                    updateLighting();
-                    weather.setWeather('storm', scene, ambientLight, sunLight);
-                    updateWeatherHUD();
-                    state.showHelperMsg("Night has fallen. A storm rages. Monsters are emerging.");
-                } else if (gameMode === 'survival' && worldTime === 'NIGHT') {
-                    worldTime = 'MORNING';
-                    enableMonstersSpawning = false;
-                    enableAnimalsSpawning = true;
-                    updateLighting();
-                    weather.setWeather('clear', scene, ambientLight, sunLight);
-                    updateWeatherHUD();
-                    state.showHelperMsg("Morning breaks. The storm has passed.");
-                } else if (gameMode === 'creative') {
-                    // EVERY 60 seconds: TOGGLE world.time
-                    worldTime = worldTime === 'MORNING' ? 'NIGHT' : 'MORNING';
-                    updateLighting();
-                    if (worldTime === 'NIGHT') {
-                        weather.setWeather('rain', scene, ambientLight, sunLight);
-                    } else {
-                        weather.setWeather('clear', scene, ambientLight, sunLight);
-                    }
-                    updateWeatherHUD();
-                    state.showHelperMsg(worldTime === 'MORNING' ? "Morning breaks." : "Night falls.");
-                }
-                timeCycleTimer = 0; 
-            }
-        }
+        // Continuous Day/Night Cycle
+        updateLighting(delta);
         
         if (gameMode === 'survival') {
             boss.update(delta);
