@@ -30,6 +30,21 @@ export class VoxelWorld {
         };
 
         this.geometry = new THREE.BoxGeometry(1, 1, 1);
+
+        // Add a single large flat liquid water plane over the lake centered at (35, 2.4, -35)
+        const waterGeo = new THREE.PlaneGeometry(33, 33);
+        const waterMat = new THREE.MeshStandardMaterial({
+            color: 0x0066FF,
+            transparent: true,
+            opacity: 0.65,
+            roughness: 0.05,
+            metalness: 0.1,
+            side: THREE.DoubleSide
+        });
+        const waterMesh = new THREE.Mesh(waterGeo, waterMat);
+        waterMesh.rotation.x = -Math.PI / 2;
+        waterMesh.position.set(35, 2.4, -35);
+        this.scene.add(waterMesh);
     }
 
     generateChunk(cx, cz) {
@@ -250,6 +265,7 @@ export class VoxelWorld {
         Object.keys(typeCounts).forEach(type => {
             const count = typeCounts[type] || 0;
             if (count === 0) return;
+            if (type === 'Water') return; // Skip rendering water as cubes!
 
             // Dynamically generate a material if it doesn't exist
             if (!this.materials[type]) {
