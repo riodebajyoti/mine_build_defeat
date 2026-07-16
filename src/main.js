@@ -655,16 +655,7 @@ controls.addEventListener('unlock', () => {
         overlay.style.display = 'flex';
     }
 });
-// Manual day/night cycle advance button
-const timeToggleBtn = document.getElementById('time-toggle');
-if (timeToggleBtn) {
-  timeToggleBtn.addEventListener('click', () => {
-    timeOfDay = (timeOfDay + 0.25) % 1.0;
-    updateLighting(1.0);
-    state.showHelperMsg(`Time advanced to ${Math.round(timeOfDay * 24)}:00.`);
-  });
-}
-// End manual toggle
+
 // --- ACCESSORIES MENU ---
 const accessoriesMenu = document.getElementById('accessories-menu');
 const closeAccessoriesBtn = document.getElementById('close-accessories-btn');
@@ -1094,6 +1085,7 @@ const MINECRAFT_ITEMS = [
     { name: 'Regeneration Potion', cat: 'potions' }, { name: 'Leaping Potion', cat: 'potions' },
     { name: 'Water Breathing Potion', cat: 'potions' }, { name: 'Luck Potion', cat: 'potions' },
     // Blocks & Furniture
+    { name: 'Water', cat: 'blocks' },
     { name: 'Red Bed', cat: 'blocks' }, { name: 'Blue Bed', cat: 'blocks' },
     { name: 'White Bed', cat: 'blocks' }, { name: 'Yellow Bed', cat: 'blocks' },
     { name: 'Green Bed', cat: 'blocks' }, { name: 'Purple Bed', cat: 'blocks' },

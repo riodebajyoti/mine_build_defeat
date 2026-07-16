@@ -757,6 +757,18 @@ function drawBrick(ctx) {
     fill(ctx,  0,14, 16,  2, darken(brick, 20));
 }
 
+function drawWater(ctx) {
+    bg(ctx, '#1E90FF');
+    // Ripples/highlights
+    [[2,3],[5,3],[9,2],[12,3],[4,7],[8,6],[13,7],[3,11],[7,12],[11,11]].forEach(([x,y]) => {
+        fill(ctx, x, y, 2, 1, '#63B8FF');
+    });
+    // Darker water undertones
+    [[1,5],[6,4],[11,5],[3,9],[7,9],[12,8],[2,13],[9,13]].forEach(([x,y]) => {
+        fill(ctx, x, y, 2, 1, '#1C86EE');
+    });
+}
+
 // ── generic fallback ──────────────────────────────────────────────────────
 
 function drawGeneric(ctx, name) {
@@ -774,6 +786,7 @@ function _drawIcon(ctx, name) {
     const n = name.toLowerCase();
 
     // base blocks
+    if (n==='water')      return drawWater(ctx);
     if (n==='dirt')       return drawDirt(ctx);
     if (n==='grass')      return drawGrass(ctx);
     if (n==='stone')      return drawStone(ctx);

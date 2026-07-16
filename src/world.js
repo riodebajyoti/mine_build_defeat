@@ -19,6 +19,14 @@ export class VoxelWorld {
             'Leaves': new THREE.MeshStandardMaterial({ color: 0x2E8B57, roughness: 0.9 }),
             'SnowGrass': new THREE.MeshStandardMaterial({ color: 0xF0F8FF, roughness: 0.8 }),
             'SnowStone': new THREE.MeshStandardMaterial({ color: 0xE0E0E0, roughness: 0.5 }),
+            'Water': new THREE.MeshStandardMaterial({
+                color: 0x1E90FF,
+                transparent: true,
+                opacity: 0.75,
+                roughness: 0.1,
+                metalness: 0.1,
+                side: THREE.DoubleSide
+            }),
         };
 
         this.geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -65,6 +73,11 @@ export class VoxelWorld {
                 const noiseVariation = Math.sin(worldX * 0.1) * Math.cos(worldZ * 0.15);
                 height = Math.max(0, height + Math.floor(noiseVariation));
 
+                // Ensure spawn area is dry on startup
+                if (Math.abs(worldX) < 15 && Math.abs(worldZ) < 15) {
+                    height = Math.max(5, height);
+                }
+
                 for (let y = -15; y < height; y++) {
                     let type;
                     
@@ -74,12 +87,26 @@ export class VoxelWorld {
                         type = y === height - 1 ? 'SnowGrass' : (y > height - 3 ? 'SnowStone' : 'Stone');
                     } else {
                         // Regular terrain
-                        type = y === height - 1 ? 'Grass' : (y > height - 4 ? 'Dirt' : 'Stone');
+                        if (y === height - 1) {
+                            type = height <= 3 ? 'Dirt' : 'Grass';
+                        } else {
+                            type = y > height - 4 ? 'Dirt' : 'Stone';
+                        }
                     }
                     
                     const key = `${worldX},${y},${worldZ}`;
                     this.blocks.set(key, type);
                     chunk.blocks.set(key, type);
+                }
+
+                // Fill with water pools in valleys below y = 3
+                const waterLevel = 3;
+                if (height <= waterLevel && distToMountain >= 25) {
+                    for (let y = height; y <= waterLevel; y++) {
+                        const key = `${worldX},${y},${worldZ}`;
+                        this.blocks.set(key, 'Water');
+                        chunk.blocks.set(key, 'Water');
+                    }
                 }
 
                 // Tree generation with 1.5% chance per column on grass
