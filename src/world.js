@@ -78,6 +78,16 @@ export class VoxelWorld {
                     height = Math.max(5, height);
                 }
 
+                const waterLevel = 3;
+                
+                // Define 3 small, sparse puddle locations in the world
+                const distToPuddle1 = Math.sqrt(Math.pow(worldX - 25, 2) + Math.pow(worldZ - 25, 2));
+                const distToPuddle2 = Math.sqrt(Math.pow(worldX + 25, 2) + Math.pow(worldZ - 20, 2));
+                const distToPuddle3 = Math.sqrt(Math.pow(worldX + 15, 2) + Math.pow(worldZ + 30, 2));
+                const insidePuddle = (distToPuddle1 < 3.5 || distToPuddle2 < 2.5 || distToPuddle3 < 3.0);
+                
+                const hasWater = (height <= waterLevel && distToMountain >= 25 && insidePuddle);
+
                 for (let y = -15; y < height; y++) {
                     let type;
                     
@@ -88,7 +98,7 @@ export class VoxelWorld {
                     } else {
                         // Regular terrain
                         if (y === height - 1) {
-                            type = height <= 3 ? 'Dirt' : 'Grass';
+                            type = hasWater ? 'Dirt' : 'Grass';
                         } else {
                             type = y > height - 4 ? 'Dirt' : 'Stone';
                         }
@@ -100,8 +110,7 @@ export class VoxelWorld {
                 }
 
                 // Fill with water pools in valleys below y = 3
-                const waterLevel = 3;
-                if (height <= waterLevel && distToMountain >= 25) {
+                if (hasWater) {
                     for (let y = height; y <= waterLevel; y++) {
                         const key = `${worldX},${y},${worldZ}`;
                         this.blocks.set(key, 'Water');
