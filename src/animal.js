@@ -10,16 +10,32 @@ export class Animal {
         const bodyGeo = new THREE.BoxGeometry(1.2, 0.8, 1.6);
         const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff }); // White color
         const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.position.y = 0.6;
+        body.position.y = 0.8;
         
         // Head
         const headGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
         const headMat = new THREE.MeshStandardMaterial({ color: 0xffccaa }); // Skin color
         const head = new THREE.Mesh(headGeo, headMat);
-        head.position.y = 1.0;
+        head.position.y = 1.2;
         head.position.z = 0.8;
         
-        this.group.add(body, head);
+        // Legs (Front left/right, Back left/right)
+        const legGeo = new THREE.BoxGeometry(0.2, 0.6, 0.2);
+        const legMat = new THREE.MeshStandardMaterial({ color: 0xdddddd });
+        
+        const leg1 = new THREE.Mesh(legGeo, legMat); // FL
+        leg1.position.set(-0.4, 0.3, 0.5);
+        const leg2 = new THREE.Mesh(legGeo, legMat); // FR
+        leg2.position.set(0.4, 0.3, 0.5);
+        const leg3 = new THREE.Mesh(legGeo, legMat); // BL
+        leg3.position.set(-0.4, 0.3, -0.5);
+        const leg4 = new THREE.Mesh(legGeo, legMat); // BR
+        leg4.position.set(0.4, 0.3, -0.5);
+        
+        this.legs = [leg1, leg2, leg3, leg4];
+        this.animTime = 0;
+
+        this.group.add(body, head, leg1, leg2, leg3, leg4);
         this.scene.add(this.group);
 
         // Random spawn far away relative to player
@@ -119,6 +135,16 @@ export class Animal {
             const lookTarget = this.group.position.clone().add(this.wanderDirection);
             lookTarget.y = this.group.position.y;
             this.group.lookAt(lookTarget);
+
+            // Leg swing animation
+            this.animTime += delta * this.speed * 8;
+            this.legs[0].rotation.x = Math.sin(this.animTime) * 0.5; // FL
+            this.legs[3].rotation.x = Math.sin(this.animTime) * 0.5; // BR
+            this.legs[1].rotation.x = -Math.sin(this.animTime) * 0.5; // FR
+            this.legs[2].rotation.x = -Math.sin(this.animTime) * 0.5; // BL
+        } else {
+            // Stand still
+            this.legs.forEach(leg => { leg.rotation.x = 0; });
         }
     }
 }
