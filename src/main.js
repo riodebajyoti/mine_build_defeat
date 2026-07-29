@@ -1272,13 +1272,14 @@ let direction = new THREE.Vector3();
 let isInWater = false;
 
 const onKeyDown = (event) => {
-    if (document.activeElement === accessorySearch) {
-        if (event.code === 'Enter') accessoryGetBtn.click();
-        return;
-    }
-    
-    if (document.activeElement === agentInput) {
-        if (event.code === 'Escape') toggleAgentConsole();
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'SELECT')) {
+        if (document.activeElement === accessorySearch && event.code === 'Enter') {
+            accessoryGetBtn.click();
+        } else if (document.activeElement === agentInput && event.code === 'Escape') {
+            toggleAgentConsole();
+        } else if ((document.activeElement === chatgptEmailInput || document.activeElement === chatgptPasswordInput) && event.code === 'Escape') {
+            chatgptLoginModal.style.display = 'none';
+        }
         return;
     }
 
@@ -1326,6 +1327,9 @@ const onKeyDown = (event) => {
 };
 
 const onKeyUp = (event) => {
+    if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'SELECT')) {
+        return;
+    }
     switch (event.code) {
         case 'ArrowUp': moveForward = false; break;
         case 'ArrowDown': moveBackward = false; break;
