@@ -859,7 +859,11 @@ function createAgentStreamMessage(isPlayer = false) {
 }
 
 async function parseAgentCommand(cmdString) {
-    const args = cmdString.trim().split(/\s+/);
+    let cleanCmd = cmdString.trim();
+    if (cleanCmd.startsWith('/')) {
+        cleanCmd = cleanCmd.slice(1);
+    }
+    const args = cleanCmd.split(/\s+/);
     if (args.length === 0 || args[0] === '') return;
     
     const command = args[0].toLowerCase();
@@ -982,6 +986,10 @@ async function parseAgentCommand(cmdString) {
                     scene.add(campfire);
                     placedFurniture.push(campfire);
                 } catch(e) { console.error(e); }
+
+                // Teleport player safely into the center of the house and reset velocity
+                camera.position.set(centerX, centerY + 1.5, centerZ);
+                velocity.set(0, 0, 0);
 
                 appendAgentMessage("House constructed successfully! Complete with walls, stone roof, green accents, a red bed, crafting table, chest, and campfire. Welcome home, Captain!");
             } else {
