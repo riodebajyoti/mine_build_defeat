@@ -138,6 +138,7 @@ You do NOT execute commands yourself in this interface, you just provide text re
         if (query.includes('help') || query.includes('command')) {
             responseText = "Here are the available console commands you can use:\n" +
                            "  - `give <item> [amount]` : Synthesize items into your inventory.\n" +
+                           "  - `build house` : Instantly construct a cozy, furnished shelter.\n" +
                            "  - `clear` : Clear the console log.\n" +
                            "  - `day` / `night` : Change the time of day.\n" +
                            "  - `help` : Show this helper menu.\n\n" +

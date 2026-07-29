@@ -868,7 +868,125 @@ async function parseAgentCommand(cmdString) {
     
     switch (command) {
         case 'help':
-            appendAgentMessage("Available commands: 'give <item> [amount]', 'mode <creative|survival>', 'heal', 'start fly', 'end fly', 'weather <clear|rain|storm>', 'help'.");
+            appendAgentMessage("Available commands: 'give <item> [amount]', 'mode <creative|survival>', 'heal', 'start fly', 'end fly', 'weather <clear|rain|storm>', 'build house', 'help'.");
+            break;
+        case 'build':
+            if (args.length > 1 && args[1].toLowerCase() === 'house') {
+                const lookDir = new THREE.Vector3();
+                camera.getWorldDirection(lookDir);
+                lookDir.y = 0;
+                lookDir.normalize();
+                
+                if (lookDir.lengthSq() < 0.01) {
+                    lookDir.set(0, 0, -1);
+                }
+                
+                const distance = 5;
+                const centerX = Math.round(camera.position.x + lookDir.x * distance);
+                const centerZ = Math.round(camera.position.z + lookDir.z * distance);
+                const centerY = Math.round(camera.position.y - 1.5);
+                
+                const chunksToUpdate = new Set();
+                const setBlockHelper = (x, y, z, type) => {
+                    world.setBlock(x, y, z, type);
+                    const cx = Math.floor(x / world.chunkSize);
+                    const cz = Math.floor(z / world.chunkSize);
+                    chunksToUpdate.add(`${cx},${cz}`);
+                };
+
+                // Floor
+                for (let dx = -2; dx <= 2; dx++) {
+                    for (let dz = -2; dz <= 2; dz++) {
+                        setBlockHelper(centerX + dx, centerY, centerZ + dz, 'Wood');
+                    }
+                }
+
+                // Walls
+                for (let y = centerY + 1; y <= centerY + 3; y++) {
+                    for (let dx = -2; dx <= 2; dx++) {
+                        for (let dz = -2; dz <= 2; dz++) {
+                            if (Math.abs(dx) === 2 || Math.abs(dz) === 2) {
+                                const wx = centerX + dx;
+                                const wz = centerZ + dz;
+                                
+                                let blockType = 'Wood';
+                                if (Math.abs(dx) === 2 && Math.abs(dz) === 2) {
+                                    blockType = 'Stone';
+                                }
+
+                                const isDoor = (dz === -2 && dx === 0 && (y === centerY + 1 || y === centerY + 2));
+                                const isWindow = (y === centerY + 2 && (
+                                    (dz === 2 && dx === 0) ||
+                                    (dx === -2 && dz === 0) ||
+                                    (dx === 2 && dz === 0)
+                                ));
+
+                                if (isDoor || isWindow) {
+                                    setBlockHelper(wx, y, wz, null);
+                                } else {
+                                    setBlockHelper(wx, y, wz, blockType);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Roof
+                for (let dx = -2; dx <= 2; dx++) {
+                    for (let dz = -2; dz <= 2; dz++) {
+                        setBlockHelper(centerX + dx, centerY + 4, centerZ + dz, 'Stone');
+                    }
+                }
+
+                // Roof decoration
+                for (let dx = -2; dx <= 2; dx++) {
+                    for (let dz = -2; dz <= 2; dz++) {
+                        if (Math.abs(dx) === 2 || Math.abs(dz) === 2) {
+                            setBlockHelper(centerX + dx, centerY + 5, centerZ + dz, 'Leaves');
+                        }
+                    }
+                }
+
+                for (const chunkKey of chunksToUpdate) {
+                    const [cx, cz] = chunkKey.split(',').map(Number);
+                    world.updateChunkMesh(cx, cz);
+                }
+
+                try {
+                    const bed = createBedMesh('Red Bed');
+                    bed.position.set(centerX - 1, centerY + 0.5, centerZ + 1);
+                    scene.add(bed);
+                    placedBeds.push(bed);
+                } catch(e) { console.error(e); }
+
+                try {
+                    const craftingTable = createFurnitureMesh('crafting table');
+                    craftingTable.userData.itemName = 'crafting table';
+                    craftingTable.position.set(centerX + 1, centerY + 0.5, centerZ + 1);
+                    scene.add(craftingTable);
+                    placedFurniture.push(craftingTable);
+                } catch(e) { console.error(e); }
+
+                try {
+                    const chest = createFurnitureMesh('chest');
+                    chest.userData.itemName = 'chest';
+                    chest.position.set(centerX + 1, centerY + 0.5, centerZ - 1);
+                    scene.add(chest);
+                    placedFurniture.push(chest);
+                } catch(e) { console.error(e); }
+
+                try {
+                    const campfire = createFurnitureMesh('campfire');
+                    campfire.userData.itemName = 'campfire';
+                    campfire.position.set(centerX - 1, centerY + 0.5, centerZ - 1);
+                    scene.add(campfire);
+                    placedFurniture.push(campfire);
+                } catch(e) { console.error(e); }
+
+                appendAgentMessage("House constructed successfully! Complete with walls, stone roof, green accents, a red bed, crafting table, chest, and campfire. Welcome home, Captain!");
+            } else {
+                appendAgentMessage("Usage: build house");
+            }
             break;
         case 'heal':
             state.setHP(100);
