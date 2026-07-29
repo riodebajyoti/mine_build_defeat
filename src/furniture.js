@@ -148,6 +148,13 @@ function makeLantern(isSoul=false) {
     });
     g.add(box(0.22, 0.22, 0.22, glow,  0, 0.48, 0)); // glow core
     g.add(box(0.30, 0.05, 0.30, iron,  0, 0.30, 0)); // bottom cap
+
+    const light = new THREE.PointLight(glowC, 2.5, 8, 1.5);
+    light.position.set(0, 0.48, 0);
+    light.castShadow = true;
+    light.shadow.bias = -0.002;
+    g.add(light);
+
     return g;
 }
 
