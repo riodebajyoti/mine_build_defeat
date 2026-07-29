@@ -220,6 +220,52 @@ function placeBed(point, normal, itemName) {
     placedBeds.push(bed);
 }
 
+// --- DOOR 3D MODEL & INTERACTION SYSTEM ---
+let placedDoors = [];
+function createDoorMesh() {
+    const doorGroup = new THREE.Group();
+    const doorMat = new THREE.MeshStandardMaterial({ color: 0x8B5A2B, roughness: 0.9 });
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0xD4AF37, metalness: 0.8, roughness: 0.2 });
+    
+    const doorPanelGeo = new THREE.BoxGeometry(0.9, 2.0, 0.1);
+    const doorPanelMesh = new THREE.Mesh(doorPanelGeo, doorMat);
+    doorPanelMesh.position.set(0.45, 1.0, 0);
+    doorPanelMesh.castShadow = true;
+    doorPanelMesh.receiveShadow = true;
+    doorGroup.add(doorPanelMesh);
+    
+    const handleGeo = new THREE.SphereGeometry(0.06, 8, 8);
+    const handleMesh = new THREE.Mesh(handleGeo, handleMat);
+    handleMesh.position.set(0.75, 1.0, 0.08);
+    doorGroup.add(handleMesh);
+    
+    const handleMeshBack = handleMesh.clone();
+    handleMeshBack.position.z = -0.08;
+    doorGroup.add(handleMeshBack);
+
+    doorGroup.userData.isOpen = false;
+    doorGroup.userData.itemName = 'door';
+    doorGroup.userData.targetYRotation = 0;
+    
+    return doorGroup;
+}
+
+function placeDoor(bx, by, bz) {
+    const door = createDoorMesh();
+    door.position.set(bx - 0.5, by - 0.5, bz);
+    
+    door.userData.bx = bx;
+    door.userData.by = by;
+    door.userData.bz = bz;
+    
+    scene.add(door);
+    placedDoors.push(door);
+    placedFurniture.push(door);
+    
+    world.blocks.set(`${bx},${by},${bz}`, 'Door');
+    world.blocks.set(`${bx},${by + 1},${bz}`, 'Door');
+}
+
 // --- FURNITURE 3D MODEL SYSTEM ---
 let placedFurniture = [];
 function placeFurniture(point, normal, itemName) {
@@ -425,7 +471,24 @@ function standUp() {
 // Main interaction dispatcher — called on right-click on placed furniture
 function interactFurniture(mesh) {
     const name = (mesh.userData.itemName || '').toLowerCase();
-    if (name.includes('chair') || name.includes('sofa')) {
+    if (name === 'door') {
+        const isOpen = !mesh.userData.isOpen;
+        mesh.userData.isOpen = isOpen;
+        mesh.userData.targetYRotation = isOpen ? Math.PI / 2 : 0;
+        
+        const bx = mesh.userData.bx;
+        const by = mesh.userData.by;
+        const bz = mesh.userData.bz;
+        if (isOpen) {
+            world.blocks.delete(`${bx},${by},${bz}`);
+            world.blocks.delete(`${bx},${by + 1},${bz}`);
+        } else {
+            world.blocks.set(`${bx},${by},${bz}`, 'Door');
+            world.blocks.set(`${bx},${by + 1},${bz}`, 'Door');
+        }
+        
+        state.showHelperMsg(isOpen ? "Opened door." : "Closed door.");
+    } else if (name.includes('chair') || name.includes('sofa')) {
         if (isSitting) { standUp(); }
         else           { sitOn(mesh); }
     } else if (name.includes('bookshelf')) {
@@ -985,6 +1048,11 @@ async function parseAgentCommand(cmdString) {
                     campfire.position.set(centerX - 1, centerY + 0.5, centerZ - 1);
                     scene.add(campfire);
                     placedFurniture.push(campfire);
+                } catch(e) { console.error(e); }
+
+                // Place 3D Door in the doorway
+                try {
+                    placeDoor(centerX, centerY + 1, centerZ - 2);
                 } catch(e) { console.error(e); }
 
                 // Teleport player safely into the center of the house and reset velocity
@@ -1697,6 +1765,12 @@ function animate() {
 
     const time = performance.now();
     const delta = (time - prevTime) / 1000;
+
+    // Smoothly animate doors
+    for (const door of placedDoors) {
+        const target = door.userData.targetYRotation || 0;
+        door.rotation.y += (target - door.rotation.y) * 0.15;
+    }
 
     if (state.isPointerLocked) {
         // Physics & Movement

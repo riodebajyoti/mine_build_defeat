@@ -265,7 +265,7 @@ export class VoxelWorld {
         Object.keys(typeCounts).forEach(type => {
             const count = typeCounts[type] || 0;
             if (count === 0) return;
-            if (type === 'Water') return; // Skip rendering water as cubes!
+            if (type === 'Water' || type === 'Door') return; // Skip rendering water and doors as cubes!
 
             // Dynamically generate a material if it doesn't exist
             if (!this.materials[type]) {
