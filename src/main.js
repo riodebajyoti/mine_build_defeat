@@ -276,6 +276,63 @@ function placeDoorAtPoint(point, normal) {
     placeDoor(bx, by, bz);
 }
 
+function droppedItemMeshFactory(itemName) {
+    const n = itemName.toLowerCase();
+    const nameMap = {
+        'stone': 'Stone', 'dirt': 'Dirt', 'grass': 'Grass',
+        'wood': 'Wood', 'leaves': 'Leaves', 'steel': 'Steel',
+        'snowgrass': 'SnowGrass', 'snowstone': 'SnowStone',
+        'water': 'Water'
+    };
+    
+    if (nameMap[n]) {
+        const mat = world.materials[nameMap[n]];
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.35), mat);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        return mesh;
+    }
+    
+    if (FURNITURE_NAMES.has(n)) {
+        try {
+            const mesh = createFurnitureMesh(itemName);
+            mesh.scale.set(0.35, 0.35, 0.35);
+            return mesh;
+        } catch(e) {}
+    }
+    
+    if (BED_NAMES.has(n) || n.includes('bed')) {
+        try {
+            const mesh = createBedMesh(itemName);
+            mesh.scale.set(0.35, 0.35, 0.35);
+            return mesh;
+        } catch(e) {}
+    }
+    
+    if (n === 'door' || n === 'oak door') {
+        try {
+            const mesh = createDoorMesh();
+            mesh.scale.set(0.35, 0.35, 0.35);
+            return mesh;
+        } catch(e) {}
+    }
+    
+    const canvas = getItemCanvas(itemName);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    const material = new THREE.MeshStandardMaterial({
+        map: texture,
+        transparent: true,
+        side: THREE.DoubleSide,
+        roughness: 0.5
+    });
+    const geometry = new THREE.PlaneGeometry(0.45, 0.45);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    return mesh;
+}
+
 // --- FURNITURE 3D MODEL SYSTEM ---
 let placedFurniture = [];
 function placeFurniture(point, normal, itemName) {
@@ -1692,7 +1749,7 @@ document.addEventListener('mousedown', (event) => {
         }
         dropPos.y = groundY;
 
-        droppedItems.push(new DroppedItem(scene, dropPos, currentItem.name, 1));
+        droppedItems.push(new DroppedItem(scene, dropPos, currentItem.name, 1, droppedItemMeshFactory));
         state.showHelperMsg(`Dropped ${currentItem.name}!`);
         currentItem.count = Math.max(0, currentItem.count - 1);
         state.notify();
