@@ -769,6 +769,16 @@ function drawWater(ctx) {
     });
 }
 
+function drawDoor(ctx) {
+    fill(ctx, 3, 1, 10, 14, '#5C4033');
+    fill(ctx, 4, 2, 8, 12, '#8B5A2B');
+    fill(ctx, 5, 3, 2, 4, '#5C4033');
+    fill(ctx, 9, 3, 2, 4, '#5C4033');
+    fill(ctx, 5, 9, 2, 4, '#5C4033');
+    fill(ctx, 9, 9, 2, 4, '#5C4033');
+    px(ctx, 11, 8, '#D4AF37');
+}
+
 // ── generic fallback ──────────────────────────────────────────────────────
 
 function drawGeneric(ctx, name) {
@@ -787,6 +797,7 @@ function _drawIcon(ctx, name) {
 
     // base blocks
     if (n==='water')      return drawWater(ctx);
+    if (n==='door' || n==='oak door') return drawDoor(ctx);
     if (n==='dirt')       return drawDirt(ctx);
     if (n==='grass')      return drawGrass(ctx);
     if (n==='stone')      return drawStone(ctx);

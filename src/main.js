@@ -266,6 +266,16 @@ function placeDoor(bx, by, bz) {
     world.blocks.set(`${bx},${by + 1},${bz}`, 'Door');
 }
 
+function placeDoorAtPoint(point, normal) {
+    const hitX = Math.round(point.x - normal.x * 0.5);
+    const hitY = Math.round(point.y - normal.y * 0.5);
+    const hitZ = Math.round(point.z - normal.z * 0.5);
+    const bx = hitX + Math.round(normal.x);
+    const by = hitY + Math.round(normal.y);
+    const bz = hitZ + Math.round(normal.z);
+    placeDoor(bx, by, bz);
+}
+
 // --- FURNITURE 3D MODEL SYSTEM ---
 let placedFurniture = [];
 function placeFurniture(point, normal, itemName) {
@@ -1354,6 +1364,7 @@ const MINECRAFT_ITEMS = [
     { name: 'Regeneration Potion', cat: 'potions' }, { name: 'Leaping Potion', cat: 'potions' },
     { name: 'Water Breathing Potion', cat: 'potions' }, { name: 'Luck Potion', cat: 'potions' },
     // Blocks & Furniture
+    { name: 'Oak Door', cat: 'blocks' },
     { name: 'Red Bed', cat: 'blocks' }, { name: 'Blue Bed', cat: 'blocks' },
     { name: 'White Bed', cat: 'blocks' }, { name: 'Yellow Bed', cat: 'blocks' },
     { name: 'Green Bed', cat: 'blocks' }, { name: 'Purple Bed', cat: 'blocks' },
@@ -1722,7 +1733,11 @@ document.addEventListener('mousedown', (event) => {
                 return;
             }
             const iName = currentItem?.name ?? '';
-            if (BED_NAMES.has(iName.toLowerCase())) {
+            if (iName.toLowerCase() === 'oak door' || iName.toLowerCase() === 'door') {
+                placeDoorAtPoint(intersection.point, intersection.face.normal);
+                currentItem.count = Math.max(0, currentItem.count - 1);
+                state.notify();
+            } else if (BED_NAMES.has(iName.toLowerCase())) {
                 placeBed(intersection.point, intersection.face.normal, iName);
                 currentItem.count = Math.max(0, currentItem.count - 1);
                 state.notify();
