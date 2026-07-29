@@ -882,3 +882,208 @@ html {
 #openai-save-btn:hover {
     background: #00c3cc;
 }
+
+/* ChatGPT Auth Styles */
+.chatgpt-signin-btn, .chatgpt-signout-btn {
+    background: #10a37f;
+    color: #fff;
+    border: none;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 4px;
+    font-family: inherit;
+    transition: background 0.2s;
+}
+
+.chatgpt-signin-btn:hover {
+    background: #1a7f64;
+}
+
+.chatgpt-signout-btn {
+    background: #3c3c3c;
+}
+
+.chatgpt-signout-btn:hover {
+    background: #c23b3b;
+}
+
+.chatgpt-login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.chatgpt-login-card {
+    background: #202123;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 400px;
+    padding: 40px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    position: relative;
+    color: #ececf1;
+    text-align: center;
+}
+
+.chatgpt-login-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: #8e8ea0;
+    font-size: 20px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.chatgpt-login-close:hover {
+    color: #fff;
+}
+
+.chatgpt-logo-container {
+    margin-bottom: 24px;
+}
+
+.chatgpt-logo-symbol {
+    font-size: 48px;
+    margin-bottom: 12px;
+    display: inline-block;
+    animation: pulse 2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.chatgpt-logo-container h2 {
+    font-size: 28px;
+    margin: 0;
+    font-weight: 600;
+    color: #fff;
+}
+
+.chatgpt-input-group {
+    margin-bottom: 16px;
+}
+
+.chatgpt-input-group input {
+    width: 100%;
+    padding: 14px;
+    background: #343541;
+    border: 1px solid #4f505e;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 16px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.chatgpt-input-group input:focus {
+    border-color: #10a37f;
+    box-shadow: 0 0 0 2px rgba(16, 163, 127, 0.3);
+}
+
+.chatgpt-login-submit {
+    width: 100%;
+    padding: 14px;
+    background: #10a37f;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 8px;
+}
+
+.chatgpt-login-submit:hover {
+    background: #1a7f64;
+}
+
+.chatgpt-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 20px 0;
+    color: #8e8ea0;
+    font-size: 12px;
+}
+
+.chatgpt-divider::before, .chatgpt-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #4f505e;
+}
+
+.chatgpt-divider span {
+    padding: 0 10px;
+}
+
+.chatgpt-oauth-btn {
+    width: 100%;
+    padding: 12px 14px;
+    background: transparent;
+    border: 1px solid #4f505e;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    transition: background 0.2s;
+}
+
+.chatgpt-oauth-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.oauth-icon {
+    font-size: 18px;
+}
+
+/* Spinner and loading */
+.chatgpt-loading-container {
+    padding: 20px 0;
+}
+
+.chatgpt-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top: 4px solid #10a37f;
+    border-radius: 50%;
+    animation: chatgpt-spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes chatgpt-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#chatgpt-loading-text {
+    font-size: 15px;
+    color: #8e8ea0;
+    animation: pulse 1.5s infinite;
+}

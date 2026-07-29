@@ -148,9 +148,15 @@
         </div>
         <div id="agent-settings-panel" class="agent-settings-panel" style="display: none;">
             <h4>ChatGPT Settings</h4>
-            <div class="setting-row">
-                <label>API Key:</label>
-                <input type="password" id="openai-api-key" placeholder="sk-...">
+            <div class="setting-row" id="chatgpt-auth-row">
+                <label>Account:</label>
+                <div id="chatgpt-auth-container">
+                    <button id="chatgpt-signin-btn" class="chatgpt-signin-btn">Sign in to ChatGPT</button>
+                    <div id="chatgpt-user-info" style="display: none; align-items: center; gap: 8px;">
+                        <span id="chatgpt-user-email" style="font-size: 11px; color: var(--accent);">captain@openai.com</span>
+                        <button id="chatgpt-signout-btn" class="chatgpt-signout-btn">Sign Out</button>
+                    </div>
+                </div>
             </div>
             <div class="setting-row">
                 <label>Model:</label>
@@ -165,7 +171,46 @@
                 <label>Temp:</label>
                 <input type="number" id="openai-temp" min="0" max="2" step="0.1" value="0.7">
             </div>
-            <button id="openai-save-btn">Connect & Save</button>
+            <button id="openai-save-btn">Save Settings</button>
+        </div>
+    </div>
+
+    <!-- ChatGPT Login Modal -->
+    <div id="chatgpt-login-modal" class="chatgpt-login-overlay" style="display: none;">
+        <div class="chatgpt-login-card">
+            <button class="chatgpt-login-close" id="close-login-btn">✕</button>
+            <div class="chatgpt-logo-container">
+                <div class="chatgpt-logo-symbol">💚</div>
+                <h2>Welcome back</h2>
+            </div>
+            
+            <div id="chatgpt-login-form-container">
+                <div class="chatgpt-input-group">
+                    <input type="email" id="chatgpt-email" required placeholder="Email address">
+                </div>
+                <div class="chatgpt-input-group">
+                    <input type="password" id="chatgpt-password" required placeholder="Password">
+                </div>
+                <button id="chatgpt-login-continue-btn" class="chatgpt-login-submit">Continue</button>
+                
+                <div class="chatgpt-divider"><span>OR</span></div>
+                
+                <button class="chatgpt-oauth-btn google-btn">
+                    <span class="oauth-icon">🌐</span> Continue with Google
+                </button>
+                <button class="chatgpt-oauth-btn microsoft-btn">
+                    <span class="oauth-icon">❖</span> Continue with Microsoft Account
+                </button>
+                <button class="chatgpt-oauth-btn apple-btn">
+                    <span class="oauth-icon">🍎</span> Continue with Apple
+                </button>
+            </div>
+
+            <!-- Simulated Auth Progress Spinner -->
+            <div id="chatgpt-auth-loading" class="chatgpt-loading-container" style="display: none;">
+                <div class="chatgpt-spinner"></div>
+                <p id="chatgpt-loading-text">Connecting to ChatGPT...</p>
+            </div>
         </div>
     </div>
 

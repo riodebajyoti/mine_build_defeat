@@ -688,46 +688,121 @@ const closeAgentBtn = document.getElementById('close-agent-btn');
 const agentInput = document.getElementById('agent-input');
 const agentHistory = document.getElementById('agent-history');
 
-// Settings UI
+// Settings & ChatGPT Auth UI
 const agentSettingsBtn = document.getElementById('agent-settings-btn');
 const agentSettingsPanel = document.getElementById('agent-settings-panel');
-const openaiApiKeyInput = document.getElementById('openai-api-key');
 const openaiModelSelect = document.getElementById('openai-model');
 const openaiTempInput = document.getElementById('openai-temp');
 const openaiSaveBtn = document.getElementById('openai-save-btn');
 const agentStatusIndicator = document.getElementById('agent-status-indicator');
 
+// ChatGPT Auth buttons
+const chatgptSigninBtn = document.getElementById('chatgpt-signin-btn');
+const chatgptSignoutBtn = document.getElementById('chatgpt-signout-btn');
+const chatgptUserInfo = document.getElementById('chatgpt-user-info');
+const chatgptUserEmail = document.getElementById('chatgpt-user-email');
+
+// ChatGPT Login Modal Elements
+const chatgptLoginModal = document.getElementById('chatgpt-login-modal');
+const closeLoginBtn = document.getElementById('close-login-btn');
+const chatgptEmailInput = document.getElementById('chatgpt-email');
+const chatgptPasswordInput = document.getElementById('chatgpt-password');
+const chatgptContinueBtn = document.getElementById('chatgpt-login-continue-btn');
+const chatgptLoginFormContainer = document.getElementById('chatgpt-login-form-container');
+const chatgptAuthLoading = document.getElementById('chatgpt-auth-loading');
+const chatgptLoadingText = document.getElementById('chatgpt-loading-text');
+const chatgptOauthBtns = document.querySelectorAll('.chatgpt-oauth-btn');
+
 var isAgentConsoleOpen = false;
 var isSettingsOpen = false;
 
-// Initialize OpenAI on load if ENV var is present
-if (openAIService.init()) {
-    agentStatusIndicator.classList.add('connected');
-    agentStatusIndicator.title = "Connected to ChatGPT";
+function updateAuthUI() {
+    if (openAIService.isConnected()) {
+        agentStatusIndicator.classList.add('connected');
+        agentStatusIndicator.title = "Connected to ChatGPT";
+        chatgptSigninBtn.style.display = 'none';
+        chatgptUserInfo.style.display = 'flex';
+        chatgptUserEmail.textContent = openAIService.userEmail || "captain@openai.com";
+    } else {
+        agentStatusIndicator.classList.remove('connected');
+        agentStatusIndicator.title = "Disconnected from ChatGPT";
+        chatgptSigninBtn.style.display = 'block';
+        chatgptUserInfo.style.display = 'none';
+    }
 }
+
+// Initial UI sync
+updateAuthUI();
 
 agentSettingsBtn.addEventListener('click', () => {
     isSettingsOpen = !isSettingsOpen;
     agentSettingsPanel.style.display = isSettingsOpen ? 'block' : 'none';
 });
 
+// Save non-credentials settings
 openaiSaveBtn.addEventListener('click', () => {
-    const key = openaiApiKeyInput.value.trim();
     const model = openaiModelSelect.value;
     const temp = parseFloat(openaiTempInput.value);
     
-    const connected = openAIService.init(key, model, temp);
-    if (connected) {
-        agentStatusIndicator.classList.add('connected');
-        agentStatusIndicator.title = "Connected to ChatGPT";
-        isSettingsOpen = false;
-        agentSettingsPanel.style.display = 'none';
-        appendAgentMessage("ChatGPT integration connected and ready.", false);
-    } else {
-        agentStatusIndicator.classList.remove('connected');
-        agentStatusIndicator.title = "Disconnected from ChatGPT";
-        appendAgentMessage("Error connecting to ChatGPT. Please check your API key.", false);
-    }
+    openAIService.init(null, model, temp);
+    isSettingsOpen = false;
+    agentSettingsPanel.style.display = 'none';
+    appendAgentMessage("Settings saved successfully.", false);
+});
+
+// Sign-in flow triggers
+chatgptSigninBtn.addEventListener('click', () => {
+    chatgptLoginModal.style.display = 'flex';
+    chatgptLoginFormContainer.style.display = 'block';
+    chatgptAuthLoading.style.display = 'none';
+});
+
+closeLoginBtn.addEventListener('click', () => {
+    chatgptLoginModal.style.display = 'none';
+});
+
+chatgptSignoutBtn.addEventListener('click', () => {
+    openAIService.setLoggedOut();
+    updateAuthUI();
+    appendAgentMessage("Signed out of ChatGPT. Using offline mode.", false);
+});
+
+// Simulate ChatGPT authentication
+function triggerMockAuth(email) {
+    chatgptLoginFormContainer.style.display = 'none';
+    chatgptAuthLoading.style.display = 'block';
+    
+    chatgptLoadingText.textContent = "Connecting to ChatGPT auth...";
+    
+    setTimeout(() => {
+        chatgptLoadingText.textContent = "Verifying secure session...";
+    }, 500);
+
+    setTimeout(() => {
+        chatgptLoadingText.textContent = "Authentication successful!";
+    }, 1000);
+
+    setTimeout(() => {
+        openAIService.setLoggedIn(email);
+        updateAuthUI();
+        chatgptLoginModal.style.display = 'none';
+        appendAgentMessage("Logged in to ChatGPT successfully. Companion core synchronized!", false);
+    }, 1500);
+}
+
+chatgptContinueBtn.addEventListener('click', () => {
+    const email = chatgptEmailInput.value.trim() || "explorer@openai.com";
+    triggerMockAuth(email);
+});
+
+chatgptOauthBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        let provider = "Google";
+        if (btn.classList.contains('microsoft-btn')) provider = "Microsoft";
+        if (btn.classList.contains('apple-btn')) provider = "Apple";
+        
+        triggerMockAuth(`user_via_${provider.toLowerCase()}@openai.com`);
+    });
 });
 
 function toggleAgentConsole() {
