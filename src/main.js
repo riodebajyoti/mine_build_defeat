@@ -1268,6 +1268,20 @@ async function parseAgentCommand(cmdString) {
                 appendAgentMessage(`Current time: ${timeOfDay.toFixed(2)} (${Math.round(timeOfDay * 24)}:00). Usage: time <day|night|number>`);
             }
             break;
+        case "what's":
+        case 'whats':
+            if (args.length > 2 && args[1].toLowerCase() === 'the' && args[2].toLowerCase() === 'time') {
+                let displayTime = 'morning';
+                if (timeOfDay >= 0.575 && timeOfDay < 0.65) {
+                    displayTime = 'dusk';
+                } else if (timeOfDay >= 0.65) {
+                    displayTime = 'night';
+                }
+                appendAgentMessage(`The time is ${displayTime}.`);
+            } else {
+                appendAgentMessage("Usage: whats the time");
+            }
+            break;
         case 'give':
             if (args.length > 1) {
                 let count = 1;
