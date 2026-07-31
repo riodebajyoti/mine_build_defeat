@@ -3,6 +3,7 @@ import { getItemIcon } from './item_icons.js';
 export const state = {
     hp: 100,
     energy: 100,
+    gameMode: 'creative',
     inventory: [
         { id: 1, name: 'Dirt', count: 0, active: true },
         { id: 2, name: 'Stone', count: 0, active: false },
@@ -21,6 +22,9 @@ export const state = {
         this.listeners.forEach(cb => cb(this));
         this.updateHUD();
         this.updateAccessoriesUI();
+        if (this.hp <= 0 && this.gameMode === 'survival') {
+            if (this.onGameOver) this.onGameOver();
+        }
     },
 
     updateAccessoriesUI() {

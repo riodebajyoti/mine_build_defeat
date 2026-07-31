@@ -154,6 +154,7 @@ let animals = [];
 let nextAnimalSpawn = 10;
 let droppedItems = [];
 let gameMode = 'creative';
+let isGameOver = false;
 
 // --- BED 3D MODEL SYSTEM ---
 const BED_NAMES = new Set(['bed','red bed','blue bed','white bed','yellow bed','green bed','purple bed','black bed','pink bed','orange bed','cyan bed']);
@@ -590,6 +591,7 @@ function initGameRules(mode) {
     gravityEnabled = true;
     flyMode = false;
     updateLighting(1.0);
+    state.gameMode = mode;
     
     if (mode === 'survival') {
         enableAnimalsSpawning = true;
@@ -781,10 +783,37 @@ controls.addEventListener('lock', () => {
 
 controls.addEventListener('unlock', () => {
     state.isPointerLocked = false;
+    if (isGameOver) return;
     if (overlay && !isAccessoriesMenuOpen) {
         overlay.style.display = 'flex';
     }
 });
+
+// --- GAME OVER SYSTEM ---
+state.onGameOver = () => {
+    isGameOver = true;
+    controls.unlock();
+    const gameOverOverlay = document.getElementById('game-over-overlay');
+    if (gameOverOverlay) {
+        gameOverOverlay.style.display = 'flex';
+    }
+};
+
+const respawnBtn = document.getElementById('respawn-btn');
+if (respawnBtn) {
+    respawnBtn.addEventListener('click', () => {
+        isGameOver = false;
+        const gameOverOverlay = document.getElementById('game-over-overlay');
+        if (gameOverOverlay) {
+            gameOverOverlay.style.display = 'none';
+        }
+        state.hp = 100;
+        state.energy = 100;
+        state.notify();
+        camera.position.set(0, 15, 0);
+        try { controls.lock(); } catch (err) { console.error(err); }
+    });
+}
 
 // --- ACCESSORIES MENU ---
 const accessoriesMenu = document.getElementById('accessories-menu');
@@ -2067,7 +2096,16 @@ function animate() {
             }
         }
         
-        monsters.forEach(m => m.update(delta, camera.position, world));
+        monsters.forEach(m => {
+            m.update(delta, camera.position, world);
+            if (m.active && gameMode === 'survival' && !isGameOver) {
+                const dist = m.group.position.distanceTo(camera.position);
+                if (dist < 2.2) {
+                    state.setHP(state.hp - delta * 3.5);
+                    state.showHelperMsg("WARNING: Under attack by zombie!");
+                }
+            }
+        });
         monsters = monsters.filter(m => {
             if (!m.active) return false;
             // Prune monsters that are too far away
