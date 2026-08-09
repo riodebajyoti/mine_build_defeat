@@ -1121,3 +1121,334 @@ html {
     color: #8e8ea0;
     animation: pulse 1.5s infinite;
 }
+
+/* ====== TABLET / TOUCH CONTROLS ====== */
+html,
+body {
+    overscroll-behavior: none;
+}
+
+#game-container,
+#game-container canvas {
+    touch-action: none;
+}
+
+#game-container canvas {
+    display: block;
+}
+
+#mobile-controls,
+.touch-controls-hint {
+    display: none;
+}
+
+#mobile-controls {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    pointer-events: none;
+    touch-action: none;
+}
+
+#look-zone {
+    position: absolute;
+    inset: 0 0 0 42%;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+.look-hint {
+    position: absolute;
+    top: 50%;
+    right: 12%;
+    transform: translateY(-50%);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.3);
+    text-shadow: 0 1px 4px #000;
+}
+
+body.game-started .look-hint {
+    animation: fade-look-hint 3s forwards;
+}
+
+@keyframes fade-look-hint {
+    0%, 65% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+#move-stick {
+    position: absolute;
+    left: max(24px, env(safe-area-inset-left));
+    bottom: max(28px, env(safe-area-inset-bottom));
+    width: 132px;
+    height: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: auto;
+    touch-action: none;
+}
+
+.stick-ring {
+    width: 124px;
+    height: 124px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 243, 255, 0.5);
+    background: radial-gradient(circle, rgba(0, 243, 255, 0.1), rgba(0, 0, 0, 0.48));
+    box-shadow: inset 0 0 24px rgba(0, 243, 255, 0.14), 0 0 18px rgba(0, 243, 255, 0.15);
+    backdrop-filter: blur(5px);
+    position: relative;
+}
+
+.stick-ring::before,
+.stick-ring::after {
+    content: '';
+    position: absolute;
+    background: rgba(255, 255, 255, 0.14);
+    pointer-events: none;
+}
+
+.stick-ring::before {
+    width: 1px;
+    height: 72%;
+    top: 14%;
+    left: 50%;
+}
+
+.stick-ring::after {
+    width: 72%;
+    height: 1px;
+    top: 50%;
+    left: 14%;
+}
+
+#move-knob {
+    position: absolute;
+    width: 58px;
+    height: 58px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.74);
+    background: radial-gradient(circle at 35% 28%, rgba(255,255,255,0.38), rgba(0,243,255,0.24) 45%, rgba(0,40,52,0.78));
+    box-shadow: 0 0 18px rgba(0, 243, 255, 0.38);
+    will-change: transform;
+}
+
+.stick-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.62);
+    text-shadow: 0 1px 3px #000;
+}
+
+.mobile-actions {
+    position: absolute;
+    right: max(24px, env(safe-area-inset-right));
+    bottom: max(28px, env(safe-area-inset-bottom));
+    width: 218px;
+    height: 166px;
+    pointer-events: none;
+}
+
+.mobile-top-actions {
+    position: absolute;
+    top: max(70px, calc(env(safe-area-inset-top) + 54px));
+    right: max(18px, env(safe-area-inset-right));
+    display: flex;
+    gap: 10px;
+    pointer-events: auto;
+}
+
+.touch-button {
+    position: absolute;
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    color: #fff;
+    background: rgba(4, 13, 26, 0.74);
+    box-shadow: inset 0 0 16px rgba(255,255,255,0.1), 0 0 15px rgba(0,0,0,0.46);
+    backdrop-filter: blur(7px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    pointer-events: auto;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.touch-button .touch-icon {
+    font-size: 25px;
+    line-height: 1;
+    font-weight: 700;
+}
+
+.touch-button > span:last-child {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    letter-spacing: 0.6px;
+}
+
+.touch-button.pressed,
+.touch-button:active {
+    transform: scale(0.92);
+    filter: brightness(1.35);
+}
+
+.touch-button.jump {
+    top: 0;
+    right: 60px;
+    border-color: rgba(77, 148, 255, 0.9);
+    box-shadow: inset 0 0 18px rgba(77,148,255,0.22), 0 0 14px rgba(77,148,255,0.28);
+}
+
+.touch-button.mine {
+    right: 0;
+    bottom: 0;
+    border-color: rgba(255, 194, 74, 0.92);
+    box-shadow: inset 0 0 18px rgba(255,194,74,0.22), 0 0 14px rgba(255,194,74,0.25);
+}
+
+.touch-button.place {
+    left: 0;
+    bottom: 0;
+    border-color: rgba(0, 243, 255, 0.86);
+    box-shadow: inset 0 0 18px rgba(0,243,255,0.2), 0 0 14px rgba(0,243,255,0.25);
+}
+
+.touch-button.compact {
+    position: static;
+    width: 64px;
+    height: 48px;
+    border-radius: 12px;
+}
+
+.touch-button.compact .touch-icon {
+    font-size: 18px;
+}
+
+body.touch-device #mobile-controls {
+    display: block;
+}
+
+body.touch-device .desktop-controls-hint {
+    display: none;
+}
+
+body.touch-device .touch-controls-hint {
+    display: inline;
+}
+
+body.touch-device #inventory-bar {
+    position: absolute;
+    left: 50%;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    padding: 6px;
+    gap: 6px;
+    margin: 0;
+    z-index: 24;
+}
+
+body.touch-device .slot {
+    width: 44px;
+    height: 44px;
+}
+
+body.touch-device .slot-icon {
+    width: 32px;
+    height: 32px;
+}
+
+body.touch-device #ai-helper {
+    display: none;
+}
+
+body.touch-device #stats {
+    width: min(220px, 29vw);
+}
+
+body.touch-device #hud {
+    padding: max(12px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+}
+
+body.touch-device #weather-indicator {
+    top: max(14px, env(safe-area-inset-top));
+    right: max(14px, env(safe-area-inset-right));
+}
+
+@media (pointer: coarse), (max-width: 1180px) {
+    #mobile-controls {
+        display: block;
+    }
+}
+
+@media (max-width: 900px), (max-height: 620px) {
+    body.touch-device #stats {
+        width: 165px;
+    }
+
+    body.touch-device #weather-indicator {
+        font-size: 7px;
+    }
+
+    body.touch-device #inventory-bar {
+        bottom: max(8px, env(safe-area-inset-bottom));
+    }
+
+    body.touch-device .slot {
+        width: 38px;
+        height: 38px;
+    }
+
+    body.touch-device .slot-icon {
+        width: 28px;
+        height: 28px;
+    }
+
+    #move-stick {
+        left: max(14px, env(safe-area-inset-left));
+        bottom: max(16px, env(safe-area-inset-bottom));
+        transform: scale(0.86);
+        transform-origin: bottom left;
+    }
+
+    .mobile-actions {
+        right: max(14px, env(safe-area-inset-right));
+        bottom: max(16px, env(safe-area-inset-bottom));
+        transform: scale(0.86);
+        transform-origin: bottom right;
+    }
+
+    .mobile-top-actions {
+        top: max(56px, calc(env(safe-area-inset-top) + 42px));
+    }
+
+    .modal {
+        max-height: 94vh;
+        overflow-y: auto;
+    }
+
+    .modal h1 {
+        margin-top: 16px;
+        margin-bottom: 12px;
+        font-size: 24px;
+    }
+
+    .mode-info p {
+        margin-bottom: 14px;
+    }
+
+    #start-btn,
+    #respawn-btn {
+        margin-bottom: 14px;
+    }
+}
