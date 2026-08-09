@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#050914">
     <title>Mine Build Defeat</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -59,6 +60,41 @@
             <div id="weather-indicator">☀️ CLEAR</div>
         </div>
 
+        <!-- Tablet / touch controls -->
+        <div id="mobile-controls" aria-label="Touch game controls">
+            <div id="look-zone" aria-label="Drag here to look around">
+                <span class="look-hint">DRAG TO LOOK</span>
+            </div>
+
+            <div class="mobile-top-actions">
+                <button id="mobile-menu-btn" class="touch-button compact" type="button" aria-label="Open inventory">
+                    <span class="touch-icon">🎒</span><span>ITEMS</span>
+                </button>
+                <button id="mobile-pause-btn" class="touch-button compact" type="button" aria-label="Pause game">
+                    <span class="touch-icon">Ⅱ</span><span>PAUSE</span>
+                </button>
+            </div>
+
+            <div id="move-stick" aria-label="Movement joystick">
+                <div class="stick-ring">
+                    <div id="move-knob"></div>
+                </div>
+                <span class="stick-label">MOVE</span>
+            </div>
+
+            <div class="mobile-actions" aria-label="Action buttons">
+                <button id="mobile-jump-btn" class="touch-button jump" type="button" aria-label="Jump">
+                    <span class="touch-icon">↑</span><span>JUMP</span>
+                </button>
+                <button id="mobile-mine-btn" class="touch-button mine" type="button" aria-label="Mine or attack">
+                    <span class="touch-icon">⛏</span><span>MINE</span>
+                </button>
+                <button id="mobile-place-btn" class="touch-button place" type="button" aria-label="Place or use item">
+                    <span class="touch-icon">▣</span><span>PLACE</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Overlays -->
         <div id="overlay">
             <div class="modal">
@@ -87,7 +123,8 @@
 
                 <button id="start-btn">START MISSION</button>
                 <div class="controls-hint">
-                    ARROW KEYS to move | CLICK to mine | RIGHT-CLICK to build | ESC to unlock cursor
+                    <span class="desktop-controls-hint">ARROW KEYS to move | CLICK to mine | RIGHT-CLICK to build | ESC to unlock cursor</span>
+                    <span class="touch-controls-hint">LEFT STICK to move | DRAG to look | TAP MINE, PLACE, or JUMP</span>
                 </div>
             </div>
         </div>
@@ -227,6 +264,7 @@
     </div>
 
     <script type="module" src="src/main.js"></script>
+    <script type="module" src="src/touch_controls.js"></script>
 </body>
 
 </html>
