@@ -27,6 +27,7 @@ scene.fog = new THREE.FogExp2(0x0a0a1a, 0.05);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 5, 10);
 scene.add(camera); // Add camera to scene so it can have children
+window.touchGameCamera = camera; // Shared only with the tablet swipe-look controls
 
 // --- 3D HAND & ITEM MODEL ---
 const handGroup = new THREE.Group();
