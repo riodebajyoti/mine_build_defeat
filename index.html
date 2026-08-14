@@ -1,255 +1,110 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#050914">
-    <title>Mine Build Defeat</title>
-    <link rel="stylesheet" href="style.css?v=tablet-1">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#06131a" />
+    <meta
+      name="description"
+      content="Sign in with ChatGPT, choose one of your worlds, and play Mine Build Defeat."
+    />
+    <meta
+      http-equiv="refresh"
+      content="0; url=https://pig-standing.pig-standing.chatgpt.site/"
+    />
     <link
-        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Press+Start+2P&display=swap"
-        rel="stylesheet">
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-                "openai": "https://esm.sh/openai@4.28.0"
-            }
-        }
+      rel="canonical"
+      href="https://pig-standing.pig-standing.chatgpt.site/"
+    />
+    <title>Mine Build Defeat</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        display: grid;
+        min-height: 100vh;
+        margin: 0;
+        place-items: center;
+        overflow: hidden;
+        color: #f4f8f6;
+        background:
+          radial-gradient(circle at 18% 34%, rgba(25, 205, 177, 0.18), transparent 32rem),
+          radial-gradient(circle at 84% 48%, rgba(120, 62, 209, 0.18), transparent 34rem),
+          linear-gradient(160deg, #06131a 0%, #02070b 50%, #0c0918 100%);
+      }
+
+      main {
+        width: min(620px, calc(100% - 40px));
+        text-align: center;
+      }
+
+      .cube {
+        display: grid;
+        width: 70px;
+        height: 70px;
+        margin: 0 auto 28px;
+        place-items: center;
+        color: #04100d;
+        background: linear-gradient(135deg, #78f08d, #5ee9e0);
+        clip-path: polygon(50% 0, 100% 25%, 100% 74%, 50% 100%, 0 74%, 0 25%);
+        font-size: 28px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(48px, 11vw, 86px);
+        line-height: 0.84;
+        letter-spacing: -0.05em;
+        text-transform: uppercase;
+      }
+
+      h1 span {
+        display: block;
+      }
+
+      h1 span:nth-child(2) {
+        color: #5ee9e0;
+      }
+
+      h1 span:nth-child(3) {
+        color: #ffad61;
+      }
+
+      p {
+        margin: 32px 0 24px;
+        color: #9aaba8;
+        line-height: 1.6;
+      }
+
+      a {
+        display: inline-block;
+        padding: 16px 24px;
+        border: 1px solid #a8ffc0;
+        color: #031009;
+        background: linear-gradient(180deg, #9bffad, #62dd78);
+        box-shadow: 0 7px 0 #287f43;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-decoration: none;
+      }
+    </style>
+    <script>
+      window.location.replace("https://pig-standing.pig-standing.chatgpt.site/");
     </script>
-</head>
-
-<body>
-    <div id="game-container">
-        <div id="crosshair"></div>
-
-        <!-- HUD -->
-        <div id="hud">
-            <div id="stats">
-                <div class="stat-bar">
-                    <div class="label">HP</div>
-                    <div class="bar-bg">
-                        <div id="hp-fill" class="fill red" style="width: 100%;"></div>
-                    </div>
-                </div>
-                <div class="stat-bar">
-                    <div class="label">ENERGY</div>
-                    <div class="bar-bg">
-                        <div id="energy-fill" class="fill blue" style="width: 100%;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="inventory-bar">
-                <div class="slot active" data-id="1">1</div>
-                <div class="slot" data-id="2">2</div>
-                <div class="slot" data-id="3">3</div>
-                <div class="slot" data-id="4">4</div>
-                <div class="slot" data-id="5">5</div>
-            </div>
-
-            <div id="ai-helper">
-                <div class="helper-avatar">💚</div>
-                <div class="helper-msg" id="helper-text">Ready to mine, Captain?</div>
-            </div>
-
-            <div id="weather-indicator">☀️ CLEAR</div>
-        </div>
-
-        <!-- Tablet / touch controls -->
-        <div id="mobile-controls" aria-label="Touch game controls">
-            <div id="look-zone" aria-label="Drag here to look around">
-                <span class="look-hint">DRAG TO LOOK</span>
-            </div>
-
-            <div class="mobile-top-actions">
-                <button id="mobile-menu-btn" class="touch-button compact" type="button" aria-label="Open inventory">
-                    <span class="touch-icon">🎒</span><span>ITEMS</span>
-                </button>
-                <button id="mobile-pause-btn" class="touch-button compact" type="button" aria-label="Pause game">
-                    <span class="touch-icon">Ⅱ</span><span>PAUSE</span>
-                </button>
-            </div>
-
-            <div id="move-stick" aria-label="Movement joystick">
-                <div class="stick-ring">
-                    <div id="move-knob"></div>
-                </div>
-                <span class="stick-label">MOVE</span>
-            </div>
-
-            <div class="mobile-actions" aria-label="Action buttons">
-                <button id="mobile-jump-btn" class="touch-button jump" type="button" aria-label="Jump">
-                    <span class="touch-icon">↑</span><span>JUMP</span>
-                </button>
-                <button id="mobile-mine-btn" class="touch-button mine" type="button" aria-label="Mine or attack">
-                    <span class="touch-icon">⛏</span><span>MINE</span>
-                </button>
-                <button id="mobile-place-btn" class="touch-button place" type="button" aria-label="Place or use item">
-                    <span class="touch-icon">▣</span><span>PLACE</span>
-                </button>
-            </div>
-        </div>
-
-        <!-- Overlays -->
-        <div id="overlay">
-            <div class="modal">
-                <div class="world-entry-info">
-                    <div class="entry-kicker">WORLD READY</div>
-                    <h1 class="modal-title" id="entry-world-name">YOUR WORLD</h1>
-                    <div class="modal-divider"><div class="diamond"></div></div>
-                    <div class="entry-mode" id="entry-world-mode">CREATIVE</div>
-                    <p id="entry-world-description">Build without limits and bring your ideas to life.</p>
-                </div>
-
-                <button id="start-btn">ENTER WORLD</button>
-                <div class="controls-hint">
-                    <span class="desktop-controls-hint">ARROW KEYS to move | CLICK to mine | RIGHT-CLICK to build | ESC to unlock cursor</span>
-                    <span class="touch-controls-hint">LEFT STICK to move | DRAG to look | TAP MINE, PLACE, or JUMP</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Game Over Overlay -->
-        <div id="game-over-overlay" style="display: none;">
-            <div class="modal" style="border-color: var(--hp);">
-                <div class="mode-info">
-                    <h1 class="modal-title" style="color: var(--hp);">GAME OVER</h1>
-                    <div class="modal-divider" style="border-color: var(--hp);"><div class="diamond" style="background: var(--hp);"></div></div>
-                    <p>You have fallen. The monsters overran your defenses.</p>
-                </div>
-                <button id="respawn-btn">RESPAWN</button>
-            </div>
-        </div>
-
-        <div id="accessories-menu" style="display: none;">
-            <div class="mc-inventory">
-
-                <!-- Tabs -->
-                <div class="mc-tabs">
-                    <button class="mc-tab active" data-cat="all">🗂️</button>
-                    <button class="mc-tab" data-cat="weapons">⚔️</button>
-                    <button class="mc-tab" data-cat="tools">⛏️</button>
-                    <button class="mc-tab" data-cat="armor">🛡️</button>
-                    <button class="mc-tab" data-cat="blocks">🛏️</button>
-                    <button class="mc-tab" data-cat="food">🍎</button>
-                    <button class="mc-tab" data-cat="materials">💎</button>
-                    <button class="mc-tab" data-cat="potions">🧪</button>
-                    <button class="mc-tab" data-cat="special">✨</button>
-                    <button class="mc-tab" data-cat="yours">🎒</button>
-                    <button class="mc-close" id="close-accessories-btn">✕</button>
-                </div>
-
-                <!-- Title bar -->
-                <div class="mc-title" id="mc-tab-title">All Items</div>
-
-                <!-- Item Grid -->
-                <div class="mc-grid" id="catalog-grid"></div>
-
-                <!-- Search bar -->
-                <div class="mc-search-row">
-                    <div class="mc-search-label">🔍 SEARCH</div>
-                    <input class="mc-search-input" type="text" id="accessory-search" placeholder="Type item name...">
-                    <button class="mc-get-btn" id="accessory-get-btn">GET</button>
-                </div>
-
-                <!-- Your hotbar -->
-                <div class="mc-hotbar-label">HOTBAR</div>
-                <div id="accessories-list" class="mc-your-items"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Agent Command Console -->
-    <div id="agent-console" style="display: none;">
-        <div class="agent-header">
-            <div class="agent-avatar">💚</div>
-            <div class="agent-title">AGENT CONSOLE</div>
-            <div class="agent-status" id="agent-status-indicator" title="Disconnected from ChatGPT"></div>
-            <button class="agent-settings-btn" id="agent-settings-btn">⚙️</button>
-            <button class="agent-close" id="close-agent-btn">✕</button>
-        </div>
-        <div class="agent-history" id="agent-history">
-            <div class="agent-msg"><span class="agent-name">Agent:</span> Systems online. Type 'help' for commands.</div>
-        </div>
-        <div class="agent-input-area">
-            <span class="agent-prompt">&gt;</span>
-            <input type="text" id="agent-input" class="agent-input-field" placeholder="Enter command or talk to AI..." autocomplete="off">
-        </div>
-        <div id="agent-settings-panel" class="agent-settings-panel" style="display: none;">
-            <h4>ChatGPT Settings</h4>
-            <div class="setting-row" id="chatgpt-auth-row">
-                <label>Account:</label>
-                <div id="chatgpt-auth-container">
-                    <button id="chatgpt-signin-btn" class="chatgpt-signin-btn" style="display:none;">Signed in</button>
-                    <div id="chatgpt-user-info" style="display: flex; align-items: center; gap: 8px;">
-                        <span id="chatgpt-user-email" style="font-size: 11px; color: var(--accent);">Mine Build Defeat account</span>
-                        <button id="chatgpt-signout-btn" class="chatgpt-signout-btn">Account Menu</button>
-                    </div>
-                </div>
-            </div>
-            <div class="setting-row">
-                <label>Model:</label>
-                <select id="openai-model">
-                    <option value="gpt-5.5">gpt-5.5 (Newest)</option>
-                    <option value="gpt-5">gpt-5</option>
-                    <option value="gpt-4.5-turbo">gpt-4.5-turbo</option>
-                    <option value="gpt-4o">gpt-4o</option>
-                </select>
-            </div>
-            <div class="setting-row">
-                <label>Temp:</label>
-                <input type="number" id="openai-temp" min="0" max="2" step="0.1" value="0.7">
-            </div>
-            <button id="openai-save-btn">Save Settings</button>
-        </div>
-    </div>
-
-    <!-- ChatGPT Login Modal -->
-    <div id="chatgpt-login-modal" class="chatgpt-login-overlay" style="display: none;">
-        <div class="chatgpt-login-card">
-            <button class="chatgpt-login-close" id="close-login-btn">✕</button>
-            <div class="chatgpt-logo-container">
-                <div class="chatgpt-logo-symbol">💚</div>
-                <h2>Welcome back</h2>
-            </div>
-            
-            <div id="chatgpt-login-form-container">
-                <div class="chatgpt-input-group">
-                    <input type="email" id="chatgpt-email" required placeholder="Email address">
-                </div>
-                <div class="chatgpt-input-group">
-                    <input type="password" id="chatgpt-password" required placeholder="Password">
-                </div>
-                <button id="chatgpt-login-continue-btn" class="chatgpt-login-submit">Continue</button>
-                
-                <div class="chatgpt-divider"><span>OR</span></div>
-                
-                <button class="chatgpt-oauth-btn google-btn">
-                    <span class="oauth-icon">🌐</span> Continue with Google
-                </button>
-                <button class="chatgpt-oauth-btn microsoft-btn">
-                    <span class="oauth-icon">❖</span> Continue with Microsoft Account
-                </button>
-                <button class="chatgpt-oauth-btn apple-btn">
-                    <span class="oauth-icon">🍎</span> Continue with Apple
-                </button>
-            </div>
-
-            <!-- Simulated Auth Progress Spinner -->
-            <div id="chatgpt-auth-loading" class="chatgpt-loading-container" style="display: none;">
-                <div class="chatgpt-spinner"></div>
-                <p id="chatgpt-loading-text">Connecting to ChatGPT...</p>
-            </div>
-        </div>
-    </div>
-
-    <script type="module" src="src/main_tablet.js?v=worlds-1"></script>
-    <script type="module" src="src/touch_controls_tablet.js?v=1"></script>
-</body>
-
+  </head>
+  <body>
+    <main>
+      <div class="cube" aria-hidden="true">◆</div>
+      <h1><span>Mine</span><span>Build</span><span>Defeat</span></h1>
+      <p>Opening the complete ChatGPT account and world experience…</p>
+      <a href="https://pig-standing.pig-standing.chatgpt.site/">Enter Mine Build Defeat</a>
+    </main>
+  </body>
 </html>
