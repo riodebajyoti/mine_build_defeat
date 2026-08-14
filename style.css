@@ -369,40 +369,6 @@ html {
     box-shadow: 0 0 30px var(--accent);
 }
 
-.world-entry-info {
-    text-align: center;
-}
-
-.entry-kicker {
-    margin-bottom: 14px;
-    color: var(--accent);
-    font-family: 'Roboto Mono', monospace;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.2em;
-}
-
-#entry-world-name {
-    overflow-wrap: anywhere;
-}
-
-.entry-mode {
-    display: inline-block;
-    margin: 5px 0 16px;
-    padding: 6px 9px;
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    font-family: 'Roboto Mono', monospace;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-}
-
-.entry-mode.survival {
-    border-color: #ff9b59;
-    color: #ff9b59;
-}
-
 #respawn-btn {
     background: var(--hp);
     color: #000;

@@ -154,9 +154,7 @@ let nextMonsterSpawn = 10;
 let animals = [];
 let nextAnimalSpawn = 10;
 let droppedItems = [];
-const launchParams = new URLSearchParams(window.location.search);
-const requestedMode = launchParams.get('mode');
-let gameMode = requestedMode === 'survival' ? 'survival' : 'creative';
+let gameMode = 'creative';
 let isGameOver = false;
 
 // --- BED 3D MODEL SYSTEM ---
@@ -723,21 +721,6 @@ function updateWeatherHUD() {
 // Init rules on start
 initGameRules(gameMode);
 
-const launchedWorldName = launchParams.get('world') || 'Your World';
-const entryWorldName = document.getElementById('entry-world-name');
-const entryWorldMode = document.getElementById('entry-world-mode');
-const entryWorldDescription = document.getElementById('entry-world-description');
-if (entryWorldName) entryWorldName.textContent = launchedWorldName;
-if (entryWorldMode) {
-    entryWorldMode.textContent = gameMode.toUpperCase();
-    entryWorldMode.classList.toggle('survival', gameMode === 'survival');
-}
-if (entryWorldDescription) {
-    entryWorldDescription.textContent = gameMode === 'survival'
-        ? 'Gather resources, survive the night, and defeat IOS-2.'
-        : 'Build without limits and bring your ideas to life.';
-}
-
 // --- CONTROLS ---
 // Use renderer.domElement for PointerLock target and add safe guards
 const controls = new PointerLockControls(camera, renderer.domElement);
@@ -909,7 +892,6 @@ function updateAuthUI() {
 }
 
 // Initial UI sync
-openAIService.setLoggedIn("Mine Build Defeat account");
 updateAuthUI();
 
 agentSettingsBtn.addEventListener('click', () => {
@@ -930,7 +912,9 @@ openaiSaveBtn.addEventListener('click', () => {
 
 // Sign-in flow triggers
 chatgptSigninBtn.addEventListener('click', () => {
-    window.top.location.href = '/';
+    chatgptLoginModal.style.display = 'flex';
+    chatgptLoginFormContainer.style.display = 'block';
+    chatgptAuthLoading.style.display = 'none';
 });
 
 closeLoginBtn.addEventListener('click', () => {
@@ -938,7 +922,9 @@ closeLoginBtn.addEventListener('click', () => {
 });
 
 chatgptSignoutBtn.addEventListener('click', () => {
-    window.top.location.href = '/';
+    openAIService.setLoggedOut();
+    updateAuthUI();
+    appendAgentMessage("Signed out of ChatGPT. Using offline mode.", false);
 });
 
 // Simulate ChatGPT authentication
