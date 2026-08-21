@@ -139,6 +139,7 @@ You do NOT execute commands yourself in this interface, you just provide text re
             responseText = "Here are the available console commands you can use:\n" +
                            "  - `give <item> [amount]` : Synthesize items into your inventory.\n" +
                            "  - `build house` : Instantly construct a cozy, furnished shelter.\n" +
+                           "  - `build castle` : Raise a fortified castle with towers, battlements, and a keep.\n" +
                            "  - `clear` : Clear the console log.\n" +
                            "  - `day` / `night` : Change the time of day.\n" +
                            "  - `help` : Show this helper menu.\n\n" +

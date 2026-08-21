@@ -12,6 +12,7 @@ import { getItemIcon } from './item_icons.js';
 import { getItemCanvas } from './item_icons.js';
 import { DroppedItem } from './dropped_item.js';
 import { FURNITURE_NAMES, createFurnitureMesh } from './furniture.js';
+import { buildCastle } from './castle_builder.js';
 
 // --- CONFIG ---
 const MOVE_SPEED = 4.3;
@@ -1046,10 +1047,12 @@ async function parseAgentCommand(cmdString) {
     
     switch (command) {
         case 'help':
-            appendAgentMessage("Available commands: 'give <item> [amount]', 'mode <creative|survival>', 'heal', 'start fly', 'end fly', 'weather <clear|rain|storm>', 'build house', 'help'.");
+            appendAgentMessage("Available commands: 'give <item> [amount]', 'mode <creative|survival>', 'heal', 'start fly', 'end fly', 'weather <clear|rain|storm>', 'build house', 'build castle', 'help'.");
             break;
         case 'build':
-            if (args.length > 1 && args[1].toLowerCase() === 'house') {
+            if (args.length > 1 && args[1].toLowerCase() === 'castle') {
+                buildCastle({ camera, world, velocity, appendMessage: appendAgentMessage });
+            } else if (args.length > 1 && args[1].toLowerCase() === 'house') {
                 const lookDir = new THREE.Vector3();
                 camera.getWorldDirection(lookDir);
                 lookDir.y = 0;
@@ -1172,7 +1175,7 @@ async function parseAgentCommand(cmdString) {
 
                 appendAgentMessage("House constructed successfully! Complete with walls, stone roof, green accents, a red bed, crafting table, chest, and campfire. Welcome home, Captain!");
             } else {
-                appendAgentMessage("Usage: build house");
+                appendAgentMessage("Usage: build <house|castle>");
             }
             break;
         case 'heal':
