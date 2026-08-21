@@ -1162,6 +1162,27 @@ body {
     overscroll-behavior: none;
 }
 
+#local-worlds-link {
+    position: absolute;
+    top: max(16px, env(safe-area-inset-top));
+    left: max(18px, env(safe-area-inset-left));
+    z-index: 60;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.82);
+    background: rgba(4, 10, 16, 0.72);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    letter-spacing: 0.8px;
+    text-decoration: none;
+    backdrop-filter: blur(6px);
+}
+
+#local-worlds-link:hover {
+    color: #9cffae;
+    border-color: rgba(156, 255, 174, 0.65);
+}
+
 #game-container,
 #game-container canvas {
     touch-action: none;

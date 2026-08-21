@@ -756,7 +756,7 @@ function updateWeatherHUD() {
 // Init rules on start
 initGameRules(gameMode);
 
-const launchedWorldName = launchParams.get('world') || 'Your World';
+const launchedWorldName = launchParams.get('name') || 'Your World';
 const entryWorldName = document.getElementById('entry-world-name');
 const entryWorldMode = document.getElementById('entry-world-mode');
 const entryWorldDescription = document.getElementById('entry-world-description');
