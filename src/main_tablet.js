@@ -13,6 +13,7 @@ import { getItemCanvas } from './item_icons.js';
 import { DroppedItem } from './dropped_item.js';
 import { FURNITURE_NAMES, createFurnitureMesh } from './furniture.js';
 import { buildCastle } from './castle_builder.js';
+import { loadWorldSave, saveWorld } from './world_save.js';
 
 // --- CONFIG ---
 const MOVE_SPEED = 4.3;
@@ -134,6 +135,9 @@ moonLight.shadow.mapSize.width = 1024;
 moonLight.shadow.mapSize.height = 1024;
 scene.add(moonLight);
 
+const launchParams = new URLSearchParams(window.location.search);
+const worldId = launchParams.get('worldId') || launchParams.get('world') || 'default-world';
+
 // --- VOXEL WORLD ---
 const world = new VoxelWorld(scene);
 // Pre-generate a 3x3 grid around player to ensure stable collision on start
@@ -143,6 +147,35 @@ for (let cx = -1; cx <= 1; cx++) {
     }
 }
 updateHandModel(); // Initialize hand now that we have state/world
+
+let saveLoaded = false;
+let saveInFlight = false;
+async function persistWorld(keepalive = false) {
+    if (!saveLoaded || saveInFlight) return;
+    saveInFlight = true;
+    try {
+        await saveWorld(worldId, camera, world, keepalive);
+    } catch (error) {
+        console.warn('World save failed:', error);
+    } finally {
+        saveInFlight = false;
+    }
+}
+
+loadWorldSave(worldId).then((save) => {
+    world.restoreSavedOverrides(save.overrides);
+    if (Array.isArray(save.position) && save.position.length === 3) {
+        camera.position.set(...save.position);
+    }
+    saveLoaded = true;
+    state.showHelperMsg(save.position ? 'Local world save restored.' : 'Local autosave ready.');
+}).catch((error) => {
+    console.warn('World load failed:', error);
+    saveLoaded = true;
+});
+
+setInterval(() => persistWorld(false), 10000);
+window.addEventListener('pagehide', () => persistWorld(true));
 
 // --- WEATHER SYSTEM ---
 const weather = new WeatherSystem(scene);
@@ -155,7 +188,6 @@ let nextMonsterSpawn = 10;
 let animals = [];
 let nextAnimalSpawn = 10;
 let droppedItems = [];
-const launchParams = new URLSearchParams(window.location.search);
 const requestedMode = launchParams.get('mode');
 let gameMode = requestedMode === 'survival' ? 'survival' : 'creative';
 let isGameOver = false;

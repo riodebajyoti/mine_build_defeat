@@ -8,6 +8,8 @@ export class VoxelWorld {
         this.blockSize = 1;
         this.blocks = new Map(); // key: "x,y,z", value: type
         this.chunks = new Map(); // key: "cx,cz", value: Chunk object
+        this.savedOverrides = new Map();
+        this.isRestoringSave = false;
 
         // Materials
         this.materials = {
@@ -217,6 +219,17 @@ export class VoxelWorld {
                 }
             }
         }
+        this.savedOverrides.forEach((type, key) => {
+            const [x, y, z] = key.split(',').map(Number);
+            if (Math.floor(x / this.chunkSize) !== cx || Math.floor(z / this.chunkSize) !== cz) return;
+            if (type === null) {
+                this.blocks.delete(key);
+                chunk.blocks.delete(key);
+            } else {
+                this.blocks.set(key, type);
+                chunk.blocks.set(key, type);
+            }
+        });
         this.updateChunkMesh(cx, cz);
     }
 
@@ -246,6 +259,31 @@ export class VoxelWorld {
             this.blocks.set(key, type);
             chunk.blocks.set(key, type);
         }
+        if (!this.isRestoringSave) this.savedOverrides.set(key, type);
+    }
+
+    restoreSavedOverrides(entries) {
+        if (!Array.isArray(entries)) return;
+        this.savedOverrides = new Map(entries);
+        const chunksToRefresh = new Set();
+        this.isRestoringSave = true;
+        for (const [key, type] of this.savedOverrides) {
+            const [x, y, z] = key.split(',').map(Number);
+            const cx = Math.floor(x / this.chunkSize);
+            const cz = Math.floor(z / this.chunkSize);
+            if (!this.chunks.has(`${cx},${cz}`)) continue;
+            this.setBlock(x, y, z, type);
+            chunksToRefresh.add(`${cx},${cz}`);
+        }
+        this.isRestoringSave = false;
+        chunksToRefresh.forEach((key) => {
+            const [cx, cz] = key.split(',').map(Number);
+            this.updateChunkMesh(cx, cz);
+        });
+    }
+
+    getSavedOverrides() {
+        return Array.from(this.savedOverrides.entries());
     }
 
     updateChunkMesh(cx, cz) {
