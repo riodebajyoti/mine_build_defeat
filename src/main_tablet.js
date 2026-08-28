@@ -894,6 +894,7 @@ closeAccessoriesBtn.addEventListener('click', () => {
 
 // --- AGENT CONSOLE ---
 const agentConsole = document.getElementById('agent-console');
+const mobileAgentBtn = document.getElementById('mobile-agent-btn');
 const closeAgentBtn = document.getElementById('close-agent-btn');
 const agentInput = document.getElementById('agent-input');
 const agentHistory = document.getElementById('agent-history');
@@ -1026,6 +1027,8 @@ function toggleAgentConsole() {
         controls.lock();
     }
 }
+
+mobileAgentBtn.addEventListener('click', toggleAgentConsole);
 
 closeAgentBtn.addEventListener('click', () => {
     if (isAgentConsoleOpen) toggleAgentConsole();
