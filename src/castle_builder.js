@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export function buildCastle({ camera, world, velocity, appendMessage }) {
+export function buildCastle({ camera, world, velocity, appendMessage, scene, createBedMesh, placedBeds }) {
     const lookDir = new THREE.Vector3();
     camera.getWorldDirection(lookDir);
     lookDir.y = 0;
@@ -100,6 +100,41 @@ export function buildCastle({ camera, world, velocity, appendMessage }) {
         for (let x = -1; x <= 1; x++) setBlock(x, baseY + 1, z, z < -half ? 'Wood' : 'Stone');
     }
 
+    // Divide both keep floors into four rooms, with doorways into a central hall.
+    for (const floorStart of [2, 6]) {
+        for (let level = floorStart; level <= floorStart + 2; level++) {
+            for (let n = -3; n <= 3; n++) {
+                const doorway = Math.abs(n) === 2 && level <= floorStart + 1;
+                if (!doorway) {
+                    setBlock(n, baseY + level, 0, 'Wood');
+                    setBlock(0, baseY + level, n, 'Wood');
+                }
+            }
+        }
+    }
+
+    // A compact wooden stairway reaches the four upstairs bedrooms.
+    for (let step = 0; step < 4; step++) setBlock(-3, baseY + 2 + step, -2 + step, 'Wood');
+
+    // One bed in every room: eight beds across two floors.
+    if (scene && createBedMesh && placedBeds) {
+        const bedSpots = [
+            [-2.5, -2.5, 'Red Bed'], [2.5, -2.5, 'Blue Bed'],
+            [-2.5, 2.5, 'Green Bed'], [2.5, 2.5, 'Purple Bed']
+        ];
+        for (const y of [baseY + 1.5, baseY + 5.5]) {
+            for (const [x, z, color] of bedSpots) {
+                try {
+                    const bed = createBedMesh(color);
+                    const pos = toWorld(x, z);
+                    bed.position.set(pos.x, y, pos.z);
+                    scene.add(bed);
+                    placedBeds.push(bed);
+                } catch (error) { console.error(error); }
+            }
+        }
+    }
+
     for (const chunkKey of chunksToUpdate) {
         const [cx, cz] = chunkKey.split(',').map(Number);
         world.updateChunkMesh(cx, cz);
@@ -108,5 +143,5 @@ export function buildCastle({ camera, world, velocity, appendMessage }) {
     const arrival = toWorld(0, -half + 3);
     camera.position.set(arrival.x, baseY + 2.5, arrival.z);
     velocity.set(0, 0, 0);
-    appendMessage('Castle constructed! Stone curtain walls, four towers, battlements, a gate and drawbridge, courtyard, and a two-story keep are ready to defend.');
+    appendMessage('Castle constructed with eight rooms, eight beds, stairs, four towers, battlements, a gate, drawbridge, and courtyard!');
 }

@@ -13,6 +13,7 @@ import { getItemCanvas } from './item_icons.js';
 import { DroppedItem } from './dropped_item.js';
 import { FURNITURE_NAMES, createFurnitureMesh } from './furniture.js';
 import { buildCastle } from './castle_builder.js';
+import { buildVillage } from './village_builder.js';
 
 // --- CONFIG ---
 const MOVE_SPEED = 4.3;
@@ -1033,11 +1034,13 @@ async function parseAgentCommand(cmdString) {
     
     switch (command) {
         case 'help':
-            appendAgentMessage("Available commands: 'give <item> [amount]', 'mode <creative|survival>', 'heal', 'start fly', 'end fly', 'weather <clear|rain|storm>', 'build house', 'build castle', 'help'.");
+            appendAgentMessage("Available commands: 'give <item> [amount]', 'mode <creative|survival>', 'heal', 'start fly', 'end fly', 'weather <clear|rain|storm>', 'build house', 'build castle', 'build village', 'help'.");
             break;
         case 'build':
             if (args.length > 1 && args[1].toLowerCase() === 'castle') {
-                buildCastle({ camera, world, velocity, appendMessage: appendAgentMessage });
+                buildCastle({ camera, world, velocity, appendMessage: appendAgentMessage, scene, createBedMesh, placedBeds });
+            } else if (args.length > 1 && args[1].toLowerCase() === 'village') {
+                buildVillage({ camera, world, velocity, appendMessage: appendAgentMessage, scene, createBedMesh, placedBeds });
             } else if (args.length > 1 && args[1].toLowerCase() === 'house') {
                 const lookDir = new THREE.Vector3();
                 camera.getWorldDirection(lookDir);
@@ -1161,7 +1164,7 @@ async function parseAgentCommand(cmdString) {
 
                 appendAgentMessage("House constructed successfully! Complete with walls, stone roof, green accents, a red bed, crafting table, chest, and campfire. Welcome home, Captain!");
             } else {
-                appendAgentMessage("Usage: build <house|castle>");
+                appendAgentMessage("Usage: build <house|castle|village>");
             }
             break;
         case 'heal':
