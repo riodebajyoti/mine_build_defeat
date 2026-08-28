@@ -13,7 +13,7 @@ import { getItemCanvas } from './item_icons.js';
 import { DroppedItem } from './dropped_item.js';
 import { FURNITURE_NAMES, createFurnitureMesh } from './furniture.js';
 import { buildCastle } from './castle_builder.js';
-import { buildVillage } from './village_builder.js';
+import { buildVillage, updateVillageResidents } from './village_builder.js';
 
 // --- CONFIG ---
 const MOVE_SPEED = 4.3;
@@ -1893,6 +1893,7 @@ function animate() {
         const target = door.userData.targetYRotation || 0;
         door.rotation.y += (target - door.rotation.y) * 0.15;
     }
+    updateVillageResidents(delta, time / 1000);
 
     if (state.isPointerLocked) {
         // Physics & Movement

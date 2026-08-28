@@ -1,6 +1,25 @@
 import * as THREE from 'three';
 
+const villageResidents = [];
+
+export function updateVillageResidents(delta, time) {
+    for (const resident of villageResidents) {
+        const { centerX, centerZ, baseY, radius, speed, phase, isGolem } = resident.userData.villageMover;
+        const angle = time * speed + phase;
+        const nextX = centerX + Math.cos(angle) * radius;
+        const nextZ = centerZ + Math.sin(angle * 0.83) * radius;
+        const dx = nextX - resident.position.x;
+        const dz = nextZ - resident.position.z;
+        resident.position.x += dx * Math.min(1, delta * (isGolem ? 0.7 : 1.3));
+        resident.position.z += dz * Math.min(1, delta * (isGolem ? 0.7 : 1.3));
+        resident.position.y = baseY + Math.sin(time * (isGolem ? 1.2 : 2.8) + phase) * (isGolem ? 0.025 : 0.05);
+        if (Math.abs(dx) + Math.abs(dz) > 0.001) resident.rotation.y = Math.atan2(dx, dz);
+    }
+}
+
 export function buildVillage({ camera, world, velocity, appendMessage, scene, createBedMesh, placedBeds }) {
+    for (const resident of villageResidents) scene.remove(resident);
+    villageResidents.length = 0;
     const dir = new THREE.Vector3();
     camera.getWorldDirection(dir);
     dir.y = 0;
@@ -63,7 +82,9 @@ export function buildVillage({ camera, world, velocity, appendMessage, scene, cr
         cube(g, [0.1, 0.1, 0.05], green, [-0.22, 2.08, -0.39]); cube(g, [0.1, 0.1, 0.05], green, [0.22, 2.08, -0.39]);
         cube(g, [1.18, 0.25, 0.28], robe, [0, 1.28, -0.35]);
         cube(g, [0.25, 0.55, 0.3], dark, [-0.22, 0.15, 0]); cube(g, [0.25, 0.55, 0.3], dark, [0.22, 0.15, 0]);
-        const p = toWorld(x, z); g.position.set(p.x, baseY + 1, p.z); g.userData.villager = true; scene.add(g);
+        const p = toWorld(x, z); g.position.set(p.x, baseY + 1, p.z); g.userData.villager = true;
+        g.userData.villageMover = { centerX: p.x, centerZ: p.z, baseY: baseY + 1, radius: 1.8, speed: 0.42, phase: x * 0.77 + z, isGolem: false };
+        scene.add(g); villageResidents.push(g);
     };
     const addGolem = (x, z) => {
         const g = new THREE.Group(), iron = mat(0xc9c3b7), shade = mat(0x81776d), vine = mat(0x3f7d2a), eye = mat(0x68152a);
@@ -74,7 +95,9 @@ export function buildVillage({ camera, world, velocity, appendMessage, scene, cr
         cube(g, [0.4, 2.2, 0.48], iron, [-0.95, 2.05, 0]); cube(g, [0.4, 2.2, 0.48], iron, [0.95, 2.05, 0]);
         cube(g, [0.52, 1.8, 0.6], iron, [-0.42, 0.85, 0]); cube(g, [0.52, 1.8, 0.6], iron, [0.42, 0.85, 0]);
         cube(g, [0.18, 1.7, 0.08], vine, [-0.32, 2.5, -0.42]); cube(g, [0.18, 1.25, 0.08], vine, [0.42, 1.25, -0.34]);
-        const p = toWorld(x, z); g.position.set(p.x, baseY + 1, p.z); g.userData.ironGolem = true; scene.add(g);
+        const p = toWorld(x, z); g.position.set(p.x, baseY + 1, p.z); g.userData.ironGolem = true;
+        g.userData.villageMover = { centerX: p.x, centerZ: p.z, baseY: baseY + 1, radius: 2.4, speed: 0.2, phase: x * 0.51 + z, isGolem: true };
+        scene.add(g); villageResidents.push(g);
     };
     [-5, 0, 5].forEach((x, i) => addVillager(x, i % 2 ? 7 : -5));
     addVillager(-8, 5); addVillager(8, 5);
