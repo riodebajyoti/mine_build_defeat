@@ -1893,7 +1893,7 @@ function animate() {
         const target = door.userData.targetYRotation || 0;
         door.rotation.y += (target - door.rotation.y) * 0.15;
     }
-    updateVillageResidents(delta, time / 1000);
+    updateVillageResidents(delta, time / 1000, monsters);
 
     if (state.isPointerLocked) {
         // Physics & Movement

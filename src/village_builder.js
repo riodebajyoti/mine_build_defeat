@@ -2,18 +2,44 @@ import * as THREE from 'three';
 
 const villageResidents = [];
 
-export function updateVillageResidents(delta, time) {
+export function updateVillageResidents(delta, time, monsters = []) {
     for (const resident of villageResidents) {
         const mover = resident.userData.villageMover;
+        let isChasingMonster = false;
+
+        // Iron golems defend the village by seeking and striking nearby monsters.
+        if (mover.isGolem) {
+            let target = null;
+            let targetDistance = 12;
+            for (const monster of monsters) {
+                if (!monster.active) continue;
+                const distance = resident.position.distanceTo(monster.group.position);
+                if (distance < targetDistance) {
+                    target = monster;
+                    targetDistance = distance;
+                }
+            }
+            mover.attackCooldown = Math.max(0, mover.attackCooldown - delta);
+            if (target) {
+                isChasingMonster = true;
+                mover.direction.set(target.group.position.x - resident.position.x, 0, target.group.position.z - resident.position.z).normalize();
+                mover.speed = mover.walkSpeed * 1.7;
+                if (targetDistance < 2.15 && mover.attackCooldown === 0) {
+                    target.takeDamage(15);
+                    mover.attackCooldown = 0.9;
+                }
+            }
+        }
+
         mover.changeDirectionTime -= delta;
-        if (mover.changeDirectionTime <= 0) {
+        if (!isChasingMonster && mover.changeDirectionTime <= 0) {
             mover.direction.set(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
             mover.changeDirectionTime = 2 + Math.random() * 5;
             mover.speed = Math.random() < 0.28 ? 0 : mover.walkSpeed * (0.75 + Math.random() * 0.5);
         }
 
         const distanceFromVillage = Math.hypot(resident.position.x - mover.centerX, resident.position.z - mover.centerZ);
-        if (distanceFromVillage > mover.wanderLimit) {
+        if (!isChasingMonster && distanceFromVillage > mover.wanderLimit) {
             mover.direction.set(mover.centerX - resident.position.x, 0, mover.centerZ - resident.position.z).normalize();
             mover.speed = mover.walkSpeed;
             mover.changeDirectionTime = 1.5 + Math.random() * 2;
@@ -118,7 +144,7 @@ export function buildVillage({ camera, world, velocity, appendMessage, scene, cr
         const rightLeg = cube(g, [0.52, 1.8, 0.6], iron, [0.42, 0.85, 0]);
         cube(g, [0.18, 1.7, 0.08], vine, [-0.32, 2.5, -0.42]); cube(g, [0.18, 1.25, 0.08], vine, [0.42, 1.25, -0.34]);
         const p = toWorld(x, z); g.position.set(p.x, baseY + 1, p.z); g.userData.ironGolem = true;
-        g.userData.villageMover = { centerX, centerZ, baseY: baseY + 1, walkSpeed: 0.45, speed: 0.45, direction: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(), changeDirectionTime: Math.random() * 3, wanderLimit: 14, phase: x * 0.51 + z, isGolem: true, legs: [leftLeg, rightLeg], stepTime: 0 };
+        g.userData.villageMover = { centerX, centerZ, baseY: baseY + 1, walkSpeed: 0.45, speed: 0.45, direction: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(), changeDirectionTime: Math.random() * 3, wanderLimit: 14, phase: x * 0.51 + z, isGolem: true, legs: [leftLeg, rightLeg], stepTime: 0, attackCooldown: 0 };
         scene.add(g); villageResidents.push(g);
     };
     [-5, 0, 5].forEach((x, i) => addVillager(x, i % 2 ? 7 : -5));
