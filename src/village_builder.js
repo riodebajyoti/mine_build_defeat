@@ -21,7 +21,17 @@ export function updateVillageResidents(delta, time) {
 
         if (mover.speed > 0) {
             resident.position.addScaledVector(mover.direction, mover.speed * delta);
-            resident.rotation.y = Math.atan2(mover.direction.x, mover.direction.z);
+            // The villager's face is modeled toward local -Z, so add PI to face travel direction.
+            resident.rotation.y = Math.atan2(mover.direction.x, mover.direction.z) + Math.PI;
+            mover.stepTime += delta * mover.speed * 9;
+            if (mover.legs) {
+                const swing = Math.sin(mover.stepTime) * 0.5;
+                mover.legs[0].rotation.x = swing;
+                mover.legs[1].rotation.x = -swing;
+            }
+        } else if (mover.legs) {
+            mover.legs[0].rotation.x = 0;
+            mover.legs[1].rotation.x = 0;
         }
         resident.position.y = mover.baseY + Math.sin(time * (mover.isGolem ? 1.2 : 2.8) + mover.phase) * (mover.isGolem ? 0.025 : 0.05);
     }
@@ -91,9 +101,10 @@ export function buildVillage({ camera, world, velocity, appendMessage, scene, cr
         cube(g, [0.22, 0.34, 0.3], skin, [0, 1.92, -0.49]);
         cube(g, [0.1, 0.1, 0.05], green, [-0.22, 2.08, -0.39]); cube(g, [0.1, 0.1, 0.05], green, [0.22, 2.08, -0.39]);
         cube(g, [1.18, 0.25, 0.28], robe, [0, 1.28, -0.35]);
-        cube(g, [0.25, 0.55, 0.3], dark, [-0.22, 0.15, 0]); cube(g, [0.25, 0.55, 0.3], dark, [0.22, 0.15, 0]);
+        const leftLeg = cube(g, [0.25, 0.55, 0.3], dark, [-0.22, 0.15, 0]);
+        const rightLeg = cube(g, [0.25, 0.55, 0.3], dark, [0.22, 0.15, 0]);
         const p = toWorld(x, z); g.position.set(p.x, baseY + 1, p.z); g.userData.villager = true;
-        g.userData.villageMover = { centerX, centerZ, baseY: baseY + 1, walkSpeed: 0.8 + Math.random() * 0.65, speed: 1, direction: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(), changeDirectionTime: Math.random() * 3, wanderLimit: 13, phase: x * 0.77 + z, isGolem: false };
+        g.userData.villageMover = { centerX, centerZ, baseY: baseY + 1, walkSpeed: 0.8 + Math.random() * 0.65, speed: 1, direction: new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(), changeDirectionTime: Math.random() * 3, wanderLimit: 13, phase: x * 0.77 + z, isGolem: false, legs: [leftLeg, rightLeg], stepTime: 0 };
         scene.add(g); villageResidents.push(g);
     };
     const addGolem = (x, z) => {
