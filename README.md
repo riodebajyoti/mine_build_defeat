@@ -13,6 +13,7 @@ A Minecraft-inspired survival and building game built with **Three.js**.
 - **SPACE**: Jump
 - **LEFT CLICK**: Mine blocks
 - **RIGHT CLICK**: Place blocks
+- **Q**: Drop the selected item; matching nearby drops merge into a stack
 - **1-5**: Switch inventory slots
 - **ESC**: Unlock cursor
 

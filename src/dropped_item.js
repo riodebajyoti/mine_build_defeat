@@ -9,6 +9,8 @@ export class DroppedItem {
         this.active = true;
         this.bobTime = Math.random() * Math.PI * 2;
         this.groundY = position.y;
+        this.pickupDelay = 0.65;
+        this.velocity = new THREE.Vector3();
 
         if (meshFactory) {
             this.mesh = meshFactory(itemName);
@@ -30,14 +32,45 @@ export class DroppedItem {
     update(delta, playerPos, state) {
         if (!this.active) return;
 
+        this.pickupDelay = Math.max(0, this.pickupDelay - delta);
         this.bobTime += delta * 2.2;
-        this.mesh.position.y = this.groundY + 0.35 + Math.sin(this.bobTime) * 0.08;
-        
-        if (this.mesh.isSprite) {
-            this.mesh.material.rotation += delta * 1.8;
-        } else {
-            this.mesh.rotation.y += delta * 1.8;
+        this.velocity.y -= 11 * delta;
+        this.mesh.position.addScaledVector(this.velocity, delta);
+        const restingY = this.groundY + 0.35;
+        if (this.mesh.position.y < restingY) {
+            this.mesh.position.y = restingY;
+            if (Math.abs(this.velocity.y) > 0.45) this.velocity.y *= -0.28;
+            else this.velocity.y = 0;
         }
+        if (this.velocity.y === 0) this.mesh.position.y = restingY + Math.sin(this.bobTime) * 0.08;
+        
+        this.mesh.rotation.y += delta * 1.8;
+
+        if (this.pickupDelay === 0 && playerPos) {
+            const distance = this.mesh.position.distanceTo(playerPos);
+            if (distance < 3) {
+                const pull = playerPos.clone().sub(this.mesh.position).normalize();
+                this.mesh.position.addScaledVector(pull, delta * Math.max(1.5, 5 - distance));
+            }
+            if (distance < 1.05 && state) {
+                state.addResource(this.itemName, this.count);
+                state.showHelperMsg(`Picked up ${this.count}x ${this.itemName}!`);
+                this.die();
+            }
+        }
+    }
+
+    canMergeWith(other) {
+        return this.active && other.active &&
+            this.itemName.toLowerCase() === other.itemName.toLowerCase() &&
+            this.mesh.position.distanceToSquared(other.mesh.position) < 0.64;
+    }
+
+    merge(other) {
+        if (!this.canMergeWith(other)) return false;
+        this.count += other.count;
+        other.die();
+        return true;
     }
 
     die() {

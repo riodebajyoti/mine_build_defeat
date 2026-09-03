@@ -189,6 +189,22 @@ let nextMonsterSpawn = 10;
 let animals = [];
 let nextAnimalSpawn = 10;
 let droppedItems = [];
+
+function dropSelectedItem() {
+    const item = state.inventory[state.selectedSlot];
+    if (!item || item.count < 1) return;
+    const direction = new THREE.Vector3();
+    camera.getWorldDirection(direction);
+    const dropPos = camera.position.clone().addScaledVector(direction, 1.1);
+    dropPos.y -= 0.55;
+    const dropped = new DroppedItem(scene, dropPos, item.name, 1, droppedItemMeshFactory);
+    dropped.velocity.copy(direction.multiplyScalar(3.5));
+    dropped.velocity.y += 2.2;
+    droppedItems.push(dropped);
+    item.count -= 1;
+    state.notify();
+    state.showHelperMsg(`Dropped ${item.name}`);
+}
 const requestedMode = launchParams.get('mode');
 let gameMode = requestedMode === 'survival' ? 'survival' : 'creative';
 let isGameOver = false;
@@ -365,8 +381,9 @@ function droppedItemMeshFactory(itemName) {
         side: THREE.DoubleSide,
         roughness: 0.5
     });
-    const geometry = new THREE.PlaneGeometry(0.45, 0.45);
-    const mesh = new THREE.Mesh(geometry, material);
+    const sideMaterial = new THREE.MeshStandardMaterial({ color: 0x4a4a4a, roughness: 0.8 });
+    const geometry = new THREE.BoxGeometry(0.45, 0.45, 0.09);
+    const mesh = new THREE.Mesh(geometry, [sideMaterial, sideMaterial, sideMaterial, sideMaterial, material, material]);
     mesh.castShadow = true;
     return mesh;
 }
@@ -1679,6 +1696,7 @@ const onKeyDown = (event) => {
         case 'Digit4': state.setSelected(3); break;
         case 'Digit5': state.setSelected(4); break;
         case 'KeyC': state.craft('Steel'); break;
+        case 'KeyQ': dropSelectedItem(); break;
         case 'KeyL':
             timeOfDay = (timeOfDay + 0.25) % 1.0;
             updateLighting(1.0);
@@ -1751,7 +1769,7 @@ document.addEventListener('mousedown', (event) => {
         let nearestAlong = Infinity;
         for (const d of droppedItems) {
             if (!d.active) continue;
-            const toItem = d.sprite.position.clone().sub(camera.position);
+            const toItem = d.mesh.position.clone().sub(camera.position);
             const along = toItem.dot(lookDir);
             if (along < 0.5 || along > 8) continue;
             const perp = toItem.clone().sub(lookDir.clone().multiplyScalar(along)).length();
@@ -2199,6 +2217,9 @@ function animate() {
         });
 
         droppedItems.forEach(d => d.update(delta, camera.position, state));
+        for (let i = 0; i < droppedItems.length; i++) {
+            for (let j = i + 1; j < droppedItems.length; j++) droppedItems[i].merge(droppedItems[j]);
+        }
         droppedItems = droppedItems.filter(d => d.active);
     }
 
