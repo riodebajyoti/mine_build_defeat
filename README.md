@@ -9,11 +9,12 @@ A Minecraft-inspired survival and building game built with **Three.js**.
 - **Crafting System**: Gather resources to build structures.
 
 ## How to Play
-- **WASD**: Move
+- **ARROW KEYS**: Move
 - **SPACE**: Jump
 - **LEFT CLICK**: Mine blocks
 - **RIGHT CLICK**: Place blocks
 - **Q**: Drop the selected item; matching nearby drops merge into a stack
+- **E**: Open the items menu
 - **1-5**: Switch inventory slots
 - **ESC**: Unlock cursor
 

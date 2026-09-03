@@ -210,8 +210,8 @@ function initializeTouchControls() {
         event.stopPropagation();
         resetMovement();
         controlsRoot.dataset.lastAction = 'mobile-menu-btn';
-        dispatchKey('KeyW', true);
-        dispatchKey('KeyW', false);
+        dispatchKey('KeyE', true);
+        dispatchKey('KeyE', false);
     });
 
     const pauseButton = document.getElementById('mobile-pause-btn');

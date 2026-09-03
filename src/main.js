@@ -1613,7 +1613,6 @@ const onKeyDown = (event) => {
     }
 
     switch (event.code) {
-        case 'KeyW': toggleAccessoriesMenu(); break;
         case 'KeyT': 
         case 'Slash':
             event.preventDefault(); // Prevent '/' from typing immediately in the input
@@ -1636,6 +1635,7 @@ const onKeyDown = (event) => {
             break;
         case 'KeyE':
             if (isSitting) standUp();
+            else toggleAccessoriesMenu();
             break;
         case 'ShiftLeft':
         case 'ShiftRight':
