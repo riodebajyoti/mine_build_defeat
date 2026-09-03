@@ -1,5 +1,3 @@
-import OpenAI from 'openai';
-
 class OpenAIService {
     constructor() {
         this.client = null;
@@ -35,17 +33,26 @@ You do NOT execute commands yourself in this interface, you just provide text re
         this.model = model || this.model;
         this.temperature = temperature !== undefined ? temperature : this.temperature;
 
-        // Only instantiate the real OpenAI client if we have a real key (not a placeholder)
-        if (this.apiKey && this.apiKey !== 'sk-your-actual-api-key-goes-here' && !this.apiKey.includes('your_openai')) {
-            this.client = new OpenAI({
-                apiKey: this.apiKey,
-                dangerouslyAllowBrowser: true // Required for client-side execution
-            });
-            return true;
-        } else {
-            this.client = null;
-        }
-        return false;
+        // The large OpenAI SDK is loaded lazily on first API-backed message so it
+        // never delays entering the 3D world.
+        this.client = null;
+        return this.hasUsableApiKey();
+    }
+
+    hasUsableApiKey() {
+        return Boolean(this.apiKey &&
+            this.apiKey !== 'sk-your-actual-api-key-goes-here' &&
+            !this.apiKey.includes('your_openai'));
+    }
+
+    async ensureClient() {
+        if (this.client || !this.hasUsableApiKey()) return this.client;
+        const { default: OpenAI } = await import('openai');
+        this.client = new OpenAI({
+            apiKey: this.apiKey,
+            dangerouslyAllowBrowser: true
+        });
+        return this.client;
     }
 
     setLoggedIn(email) {
@@ -83,6 +90,14 @@ You do NOT execute commands yourself in this interface, you just provide text re
         if (!this.isConnected()) {
             yield "Error: ChatGPT session is not active. Please sign in in Settings.";
             return;
+        }
+
+        if (!this.client && this.hasUsableApiKey()) {
+            try {
+                await this.ensureClient();
+            } catch (error) {
+                console.warn('Could not load the online Agent; using local mode.', error);
+            }
         }
 
         // If we don't have a valid client, run the local simulator stream
@@ -145,7 +160,7 @@ You do NOT execute commands yourself in this interface, you just provide text re
                            "  - `help` : Show this helper menu.\n\n" +
                            "You can also use standard keybindings:\n" +
                            "  - **L** : Toggle day/night cycle\n" +
-                           "  - **E** : Open creative inventory / catalog\n" +
+                           "  - **W** : Open creative inventory / catalog\n" +
                            "  - **/** or **T** : Toggle agent console";
         } else if (query.includes('synthesize') || query.includes('give') || query.includes('item') || query.includes('block')) {
             responseText = "To synthesize items, type the command `give <item_name> [amount]` directly into this console.\n" +
@@ -153,12 +168,12 @@ You do NOT execute commands yourself in this interface, you just provide text re
                            "You can also use the Creative Catalog by pressing **E** to select blocks visually.";
         } else if (query.includes('control') || query.includes('move') || query.includes('play') || query.includes('key')) {
             responseText = "Here is a quick controls cheat sheet, Captain:\n" +
-                           "  - **W / A / S / D** : Move around the world\n" +
+                           "  - **Arrow Keys** : Move around the world\n" +
                            "  - **Space** : Jump (hold to swim/fly)\n" +
                            "  - **Left Click** : Mine/destroy blocks\n" +
                            "  - **Right Click** : Place active block from hotbar\n" +
                            "  - **1 - 5 Keys** : Select slot in your hotbar\n" +
-                           "  - **E** : Open inventory menu\n" +
+                           "  - **W** : Open inventory menu\n" +
                            "  - **L** : Toggle day/night\n" +
                            "  - **T** or **/** : Open/close agent console";
         } else if (query.includes('monster') || query.includes('zombie') || query.includes('spider') || query.includes('fight') || query.includes('enemy') || query.includes('defeat')) {
@@ -178,7 +193,7 @@ You do NOT execute commands yourself in this interface, you just provide text re
             const responses = [
                 "Understood, Captain. Scans show the local voxel terrain is stable. What is our current building objective?",
                 "Systems online. Let me know if you need to synthesize any specific blocks or if you want tips on defending against spiders and zombies.",
-                "Processing terrain data... I am monitoring your hotbar and energy levels. Don't forget you can press 'E' to see your catalog!",
+                "Processing terrain data... I am monitoring your hotbar and energy levels. Don't forget you can press 'W' to see your catalog!",
                 "Affirmative! Keep exploring and building. If you get lost or want to set the time, just ask or type `night`/`day`.",
                 "Analyzing query... My knowledge database suggests building a secure perimeter. The local monsters get quite aggressive after twilight."
             ];

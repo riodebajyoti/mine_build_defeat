@@ -111,9 +111,9 @@ const robotAntenna = new THREE.Mesh(robotAntennaGeo, robotBodyMat);
 robotAntenna.position.set(0, 0.35, 0);
 robotGroup.add(robotAntenna);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+const renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio <= 1.5, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.getElementById('game-container').appendChild(renderer.domElement);
@@ -125,15 +125,15 @@ scene.add(ambientLight);
 const sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
 sunLight.position.set(50, 100, 50);
 sunLight.castShadow = true;
-sunLight.shadow.mapSize.width = 2048;
-sunLight.shadow.mapSize.height = 2048;
+sunLight.shadow.mapSize.width = 1024;
+sunLight.shadow.mapSize.height = 1024;
 scene.add(sunLight);
 
 const moonLight = new THREE.DirectionalLight(0x5577ff, 0.0);
 moonLight.position.set(-50, -100, -50);
 moonLight.castShadow = true;
-moonLight.shadow.mapSize.width = 1024;
-moonLight.shadow.mapSize.height = 1024;
+moonLight.shadow.mapSize.width = 512;
+moonLight.shadow.mapSize.height = 512;
 scene.add(moonLight);
 
 const launchParams = new URLSearchParams(window.location.search);
@@ -141,12 +141,8 @@ const worldId = launchParams.get('worldId') || launchParams.get('world') || 'def
 
 // --- VOXEL WORLD ---
 const world = new VoxelWorld(scene);
-// Pre-generate a 3x3 grid around player to ensure stable collision on start
-for (let cx = -1; cx <= 1; cx++) {
-    for (let cz = -1; cz <= 1; cz++) {
-        world.generateChunk(cx, cz);
-    }
-}
+// Generate only the spawn chunk up front; nearby terrain streams in progressively.
+world.generateChunk(0, 0);
 updateHandModel(); // Initialize hand now that we have state/world
 
 let saveLoaded = false;

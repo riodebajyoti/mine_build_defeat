@@ -10,6 +10,7 @@ export class VoxelWorld {
         this.chunks = new Map(); // key: "cx,cz", value: Chunk object
         this.savedOverrides = new Map();
         this.isRestoringSave = false;
+        this.lastChunkLoadTime = 0;
 
         // Materials
         this.materials = {
@@ -315,8 +316,11 @@ export class VoxelWorld {
             }
 
             const mesh = new THREE.InstancedMesh(this.geometry, this.materials[type], count);
-            mesh.castShadow = true;
+            // Receiving the world shadow keeps depth cues without the high cost of
+            // making tens of thousands of terrain cubes shadow casters.
+            mesh.castShadow = false;
             mesh.receiveShadow = true;
+            mesh.instanceMatrix.setUsage(THREE.StaticDrawUsage);
 
             let i = 0;
             const matrix = new THREE.Matrix4();
@@ -393,7 +397,7 @@ export class VoxelWorld {
 
         const px = Math.floor(playerPos.x / this.chunkSize);
         const pz = Math.floor(playerPos.z / this.chunkSize);
-        const viewDistance = 4;
+        const viewDistance = 3;
 
         // 1. Identify chunks to load
         const chunksToLoad = [];
@@ -412,10 +416,13 @@ export class VoxelWorld {
         // Sort so closest chunks load first
         chunksToLoad.sort((a, b) => a.distSq - b.distSq);
 
-        // Load at most one chunk per frame
-        if (chunksToLoad.length > 0) {
+        // Spread chunk creation across frames so entering or moving never causes
+        // a long burst of synchronous terrain generation.
+        const now = performance.now();
+        if (chunksToLoad.length > 0 && now - this.lastChunkLoadTime >= 100) {
             const { cx, cz } = chunksToLoad[0];
             this.generateChunk(cx, cz);
+            this.lastChunkLoadTime = now;
         }
 
         // 2. Unload chunks that are too far away
