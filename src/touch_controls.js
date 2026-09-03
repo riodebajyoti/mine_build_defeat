@@ -198,8 +198,8 @@ function initializeTouchControls() {
         event.preventDefault();
         event.stopPropagation();
         resetMovement();
-        dispatchKey('KeyE', true);
-        dispatchKey('KeyE', false);
+        dispatchKey('KeyW', true);
+        dispatchKey('KeyW', false);
     });
 
     const pauseButton = document.getElementById('mobile-pause-btn');
