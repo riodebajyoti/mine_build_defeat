@@ -15,6 +15,15 @@ export const state = {
     isPointerLocked: false,
 
     listeners: [],
+    draggedItem: null,
+    recipes: [
+        { ingredients: ['Wood', 'Stone'], amounts: [2, 3], result: 'Stone Pickaxe' },
+        { ingredients: ['Wood', 'Iron Ingot'], amounts: [1, 2], result: 'Iron Sword' },
+        { ingredients: ['Wood', 'Diamond'], amounts: [1, 3], result: 'Diamond Pickaxe' },
+        { ingredients: ['Apple', 'Gold Ingot'], amounts: [1, 8], result: 'Golden Apple' },
+        { ingredients: ['Wood', 'Coal'], amounts: [1, 1], result: 'Campfire' },
+        { ingredients: ['Stone', 'Iron Ingot'], amounts: [3, 1], result: 'Anvil' }
+    ],
     subscribe(callback) {
         this.listeners.push(callback);
     },
@@ -37,8 +46,34 @@ export const state = {
                 const el = document.createElement('div');
                 el.className = 'accessory-item';
                 el.title = item.name;
+                el.draggable = item.count > 0;
+                el.dataset.itemName = item.name;
                 el.innerHTML = `<img class="slot-icon" src="${icon}" alt="${item.name}"><span class="item-count">${item.count > 0 ? item.count : ''}</span>`;
                 el.onclick = () => this.equipItem(item);
+                el.ondragstart = (event) => {
+                    if (item.count < 1) return event.preventDefault();
+                    this.draggedItem = item;
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', item.name);
+                    el.classList.add('dragging');
+                };
+                el.ondragend = () => {
+                    this.draggedItem = null;
+                    el.classList.remove('dragging');
+                    document.querySelectorAll('.craft-target').forEach(node => node.classList.remove('craft-target'));
+                };
+                el.ondragover = (event) => {
+                    if (this.draggedItem && this.draggedItem !== item) {
+                        event.preventDefault();
+                        el.classList.add('craft-target');
+                    }
+                };
+                el.ondragleave = () => el.classList.remove('craft-target');
+                el.ondrop = (event) => {
+                    event.preventDefault();
+                    el.classList.remove('craft-target');
+                    if (this.draggedItem) this.combineItems(this.draggedItem, item);
+                };
                 list.appendChild(el);
             }
         });
@@ -98,6 +133,36 @@ export const state = {
         }
         this.notify();
         this.showHelperMsg(`Collected ${count}x ${item.name}!`);
+    },
+
+    combineItems(first, second) {
+        if (!first || !second || first === second) return false;
+        const names = [first.name, second.name];
+        const recipe = this.recipes.find(candidate =>
+            candidate.ingredients.every(name => names.some(value => value.toLowerCase() === name.toLowerCase()))
+        );
+        if (!recipe) {
+            this.showHelperMsg(`${first.name} and ${second.name} do not make a recipe.`);
+            return false;
+        }
+
+        const ingredientItems = recipe.ingredients.map(name =>
+            this.inventory.find(item => item.name.toLowerCase() === name.toLowerCase())
+        );
+        const missing = ingredientItems.findIndex((item, index) => !item || item.count < recipe.amounts[index]);
+        if (missing !== -1) {
+            this.showHelperMsg(`Need ${recipe.amounts[missing]}x ${recipe.ingredients[missing]}!`);
+            return false;
+        }
+
+        ingredientItems.forEach((item, index) => { item.count -= recipe.amounts[index]; });
+        let result = this.inventory.find(item => item.name.toLowerCase() === recipe.result.toLowerCase());
+        if (result) result.count += 1;
+        else this.inventory.push({ id: Math.max(...this.inventory.map(item => item.id), 0) + 1, name: recipe.result, count: 1, active: false });
+        this.draggedItem = null;
+        this.notify();
+        this.showHelperMsg(`Crafted 1x ${recipe.result}!`);
+        return true;
     },
 
     setHP(val) {

@@ -20,9 +20,13 @@ export class DroppedItem {
             texture.magFilter = THREE.NearestFilter;
             texture.minFilter = THREE.NearestFilter;
 
-            const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
-            this.mesh = new THREE.Sprite(mat);
-            this.mesh.scale.set(0.45, 0.45, 0.45);
+            const face = new THREE.MeshStandardMaterial({ map: texture, transparent: true, alphaTest: 0.05, roughness: 0.65 });
+            const edge = new THREE.MeshStandardMaterial({ color: 0x343434, roughness: 0.9 });
+            this.mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(0.45, 0.45, 0.09),
+                [edge, edge, edge, edge, face, face]
+            );
+            this.mesh.castShadow = true;
         }
 
         this.mesh.position.set(position.x, this.groundY + 0.35, position.z);

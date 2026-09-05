@@ -475,6 +475,8 @@ html {
     max-width: 98vw;
     font-family: 'Press Start 2P', monospace;
     image-rendering: pixelated;
+    box-shadow: 0 14px 0 #373737, 0 24px 34px rgba(0,0,0,.65);
+    transform: perspective(900px) rotateX(1.5deg);
 }
 
 /* Tabs row */
@@ -587,15 +589,16 @@ html {
     cursor: pointer;
     font-size: 20px;
     position: relative;
-    transition: none;
+    transition: transform .12s ease, filter .12s ease;
     gap: 0;
     image-rendering: pixelated;
 }
 
 .catalog-item:hover {
     background: #9B9B9B;
-    transform: none;
-    box-shadow: none;
+    transform: translateY(-3px) scale(1.06);
+    box-shadow: 0 5px 0 #373737, 0 8px 12px rgba(0,0,0,.35);
+    z-index: 3;
 }
 
 .catalog-item:hover::after {
@@ -622,6 +625,8 @@ html {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     display: block;
+    filter: drop-shadow(3px 4px 0 rgba(0,0,0,.42));
+    transform: rotateX(8deg) rotateY(-8deg);
 }
 
 /* Stack count in the 'yours' tab */
@@ -739,11 +744,33 @@ html {
     position: relative;
     color: #fff;
     image-rendering: pixelated;
+    transition: transform .12s ease, box-shadow .12s ease;
 }
 
 .accessory-item:hover {
     background: #9B9B9B;
+    transform: translateY(-3px) scale(1.06);
+    box-shadow: 0 5px 0 #373737, 0 8px 12px rgba(0,0,0,.35);
+    z-index: 3;
 }
+
+.accessory-item.dragging { opacity: .45; transform: scale(.9); }
+.accessory-item.craft-target {
+    outline: 3px solid #80ff61;
+    box-shadow: 0 0 16px #43d628, inset 0 0 10px rgba(67,214,40,.6);
+    transform: translateY(-4px) scale(1.1);
+}
+
+.mc-reaction-hint {
+    margin-top: 7px;
+    color: #373737;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.slot-icon { filter: drop-shadow(2px 3px 0 rgba(0,0,0,.45)); transform: rotateX(7deg) rotateY(-7deg); }
 
 .accessory-item .item-count {
     position: absolute;
