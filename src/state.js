@@ -13,6 +13,7 @@ export const state = {
     ],
     selectedSlot: 0,
     isPointerLocked: false,
+    effects: {},
 
     listeners: [],
     draggedItem: null,
@@ -166,8 +167,27 @@ export const state = {
     },
 
     setHP(val) {
+        if (val < this.hp) {
+            const resistance = this.effects.Resistance;
+            if (resistance && resistance.until > Date.now()) {
+                val = this.hp - ((this.hp - val) * resistance.damageMultiplier);
+            }
+        }
         this.hp = Math.max(0, Math.min(100, val));
         this.notify();
+    },
+
+    setEnergy(val) {
+        this.energy = Math.max(0, Math.min(100, val));
+        this.notify();
+    },
+
+    addEffect(name, seconds, damageMultiplier = 1) {
+        this.effects[name] = { until: Date.now() + seconds * 1000, damageMultiplier };
+    },
+
+    clearEffects() {
+        this.effects = {};
     },
 
     setSelected(index) {

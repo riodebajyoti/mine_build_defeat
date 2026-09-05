@@ -11,6 +11,7 @@ import { WeatherSystem } from './weather.js';
 import { getItemIcon } from './item_icons.js';
 import { getItemCanvas } from './item_icons.js';
 import { DroppedItem } from './dropped_item.js';
+import { consumeFood, isFood } from './food.js';
 import { FURNITURE_NAMES, createFurnitureMesh } from './furniture.js';
 import { buildCastle } from './castle_builder.js';
 import { buildVillage, updateVillageResidents } from './village_builder.js';
@@ -37,6 +38,7 @@ handGroup.position.set(0.5, -0.4, -0.8);
 camera.add(handGroup);
 
 let currentHandMesh = null;
+let eatingTime = 0;
 // --- HOLD LAST HELD ITEM FOR HAND ---
 let lastItemHeldName = null;
 
@@ -1788,6 +1790,10 @@ document.addEventListener('mousedown', (event) => {
     }
 
     const currentItem = state.inventory[state.selectedSlot];
+    if (currentItem && event.button === 2 && isFood(currentItem.name)) {
+        if (consumeFood(state, currentItem)) eatingTime = 0.85;
+        return;
+    }
     // Non-placeable categories: weapons, tools, armor, potions, etc. get DROPPED on right-click.
     // Everything else (world blocks, catalog blocks, beds, unknown items like 'Bed') gets PLACED.
     const ACCESSORY_CATS = new Set(['weapons', 'tools', 'armor', 'headgear', 'horsearmor', 'potions', 'special', 'food', 'materials']);
@@ -2063,7 +2069,12 @@ function animate() {
         }
 
         // Hand Animations
-        if (isSwinging) {
+        if (eatingTime > 0) {
+            eatingTime = Math.max(0, eatingTime - delta);
+            const bite = Math.sin((0.85 - eatingTime) * 28);
+            handGroup.position.set(0.38, -0.28 + bite * 0.09, -0.58);
+            handGroup.rotation.set(-0.45, 0.18, bite * 0.12);
+        } else if (isSwinging) {
             swingTime += delta * 20; // Minecraft swings are fast
             if (swingTime > Math.PI) {
                 isSwinging = false;
