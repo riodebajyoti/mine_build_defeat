@@ -44,8 +44,11 @@ function updateHandModel() {
     if (currentHandMesh) {
         handGroup.remove(currentHandMesh);
         if (currentHandMesh.material) {
-            if (currentHandMesh.material.map) currentHandMesh.material.map.dispose();
-            currentHandMesh.material.dispose();
+            const materials = Array.isArray(currentHandMesh.material) ? currentHandMesh.material : [currentHandMesh.material];
+            materials.forEach(material => {
+                if (material.map) material.map.dispose();
+                material.dispose();
+            });
         }
         if (currentHandMesh.geometry) currentHandMesh.geometry.dispose();
         currentHandMesh = null;
@@ -66,15 +69,15 @@ function updateHandModel() {
         texture.magFilter = THREE.NearestFilter;
         texture.minFilter = THREE.NearestFilter;
 
-        const geometry = new THREE.PlaneGeometry(0.5, 0.5);
-        const material = new THREE.MeshBasicMaterial({
+        const geometry = new THREE.BoxGeometry(0.52, 0.52, 0.075);
+        const faceMaterial = new THREE.MeshBasicMaterial({
             map: texture,
             transparent: true,
             alphaTest: 0.05,
-            side: THREE.DoubleSide,
             depthTest: false,
         });
-        currentHandMesh = new THREE.Mesh(geometry, material);
+        const edgeMaterial = new THREE.MeshBasicMaterial({ color: 0x383838, depthTest: false });
+        currentHandMesh = new THREE.Mesh(geometry, [edgeMaterial, edgeMaterial, edgeMaterial, edgeMaterial, faceMaterial, faceMaterial]);
         currentHandMesh.renderOrder = 999;
         currentHandMesh.rotation.set(-0.1, -Math.PI / 6, 0.08);
         handGroup.add(currentHandMesh);
