@@ -1,7 +1,9 @@
+import { createTV, isTV } from './tv.js';
 import * as THREE from 'three';
 
 // ─── items that get a custom 3-D mesh when placed ────────────────────────────
 export const FURNITURE_NAMES = new Set([
+    'tv','television',
     'chest','ender chest','trapped chest',
     'crafting table',
     'furnace','blast furnace','smoker',
@@ -392,6 +394,7 @@ function makeStyledCube(itemName) {
 // ─── Main dispatch ────────────────────────────────────────────────────────────
 export function createFurnitureMesh(itemName) {
     const n = itemName.toLowerCase();
+    if (isTV(n)) return createTV();
     if (n.includes('chest'))                                return makeChest(n);
     if (n.includes('crafting'))                             return makeCraftingTable();
     if (n.includes('furnace')||n.includes('smoker')||n.includes('blast')) return makeFurnace(n);
