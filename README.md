@@ -47,3 +47,16 @@ For production deployment, build the project with:
 npm run build
 ```
 Then serve the `dist/` directory. **Note**: If you want the ChatGPT integration to work for public users without them entering their own API keys, you will need to proxy the API requests through a secure backend so your `.env` key is not exposed to the client browser.
+
+### Guest TV with in-game YouTube
+
+Press **T** and enter `build tv` to place a TV on nearby ground, facing you.
+
+- `tv youtube <video URL or ID>` opens the embedded YouTube player inside the game.
+- `tv youtube` opens the player with a video input and remembers the last video.
+- `tv on`, `tv off`, `tv home`, `tv status`, and `tv stop` control the nearest TV within eight blocks.
+- Use the embedded YouTube controls to play, pause, change volume, or enter fullscreen. **Stop & back to game** removes the player and stops its audio.
+
+Guest playback needs no API key or game sign-in. Paste a video link or ID; full YouTube search is not included. YouTube videos must allow embedding. Playback stays in the game tab; no service shortcuts are used. The 3D TV opens a large in-game viewing panel when used.
+
+TV is in the Blocks & Furniture catalog; `give tv 1` adds one to inventory. Right-click a placed TV to watch; left-click to collect it. Local world saves include placed TVs, power, and the last video ID.
