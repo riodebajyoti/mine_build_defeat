@@ -795,6 +795,14 @@ function drawGeneric(ctx, name) {
 function _drawIcon(ctx, name) {
     const n = name.toLowerCase();
 
+    if (n === 'tv' || n === 'television') {
+        fill(ctx, 1, 2, 14, 10, '#171c24');
+        ['#ffffff','#ffdf30','#30dddd','#40cc50','#dd40dd','#ee4444'].forEach((c, i) => fill(ctx, 2 + i * 2, 3, 2, 7, c));
+        fill(ctx, 7, 12, 2, 2, '#363e4b');
+        fill(ctx, 4, 14, 8, 1, '#171c24');
+        return;
+    }
+
     // base blocks
     if (n==='water')      return drawWater(ctx);
     if (n==='door' || n==='oak door') return drawDoor(ctx);
