@@ -17,6 +17,15 @@ export function parseYouTubeId(value) {
     } catch { return null; }
 }
 
+export async function searchYouTube(query, apiKey, signal, fetcher = fetch) {
+    if (!apiKey.trim()) throw new Error('Add a YouTube Data API key under Search setup to search videos. Video links work without a key.');
+    const params = new URLSearchParams({ part: 'snippet', type: 'video', videoEmbeddable: 'true', maxResults: '8', q: query.trim(), key: apiKey.trim() });
+    const response = await fetcher('https://www.googleapis.com/youtube/v3/search?' + params, { signal });
+    if (!response.ok) throw new Error(response.status === 403 ? 'YouTube search is unavailable. Check that your key enables YouTube Data API v3 and has quota remaining.' : 'YouTube search failed. Check your key and try again.');
+    const data = await response.json();
+    return (Array.isArray(data.items) ? data.items : []).filter(item => parseYouTubeId(item.id?.videoId)).map(item => ({ id: item.id.videoId, title: item.snippet?.title || 'YouTube video', channel: item.snippet?.channelTitle || '' }));
+}
+
 export function createTV() {
     const tv = new THREE.Group();
     const dark = new THREE.MeshStandardMaterial({ color: 0x171c24, roughness: 0.4 });
@@ -78,9 +87,13 @@ function drawTVScreen(tv) {
     texture.needsUpdate = true;
 }
 
+let searchKey = '';
+let searchRequest;
 let playerDialog;
 let activeTV;
 export function closeTVPlayer() {
+    searchRequest?.abort();
+    searchRequest = null;
     if (playerDialog) {
         playerDialog.querySelector('iframe')?.remove();
         playerDialog.remove();
@@ -89,26 +102,36 @@ export function closeTVPlayer() {
     activeTV = null;
 }
 
-export function showTVApps(tv, videoId = '') {
+export function showTVApps(tv, videoId = '', initialSearch = '') {
     closeTVPlayer();
     setTV(tv, 'on');
     document.exitPointerLock?.();
     const dialog = document.createElement('dialog');
     playerDialog = dialog; activeTV = tv;
     dialog.setAttribute('aria-label', 'YouTube TV player');
-    dialog.style.cssText = 'width:min(900px,94vw);max-height:94vh;box-sizing:border-box;overflow:auto;border:1px solid #405166;border-radius:18px;background:#101924;color:white;padding:24px;font-family:Arial,sans-serif;box-shadow:0 20px 90px #000b;';
+    dialog.style.cssText = 'position:fixed;inset:0;margin:auto;width:min(820px,94vw);max-height:94vh;box-sizing:border-box;overflow:auto;border:1px solid #405166;border-radius:18px;background:#101924;color:white;padding:24px;font-family:Arial,sans-serif;box-shadow:0 20px 90px #000b;';
     const title = document.createElement('h2'); title.textContent = 'YouTube • TV'; title.style.cssText = 'margin:0 0 16px;color:#ff9900;';
     const form = document.createElement('form'); form.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;';
-    const input = document.createElement('input'); input.type = 'text'; input.placeholder = 'YouTube video URL or ID'; input.setAttribute('aria-label', 'YouTube video URL or ID');
+    const input = document.createElement('input'); input.type = 'text'; input.placeholder = 'Search videos or paste a YouTube link'; input.setAttribute('aria-label', 'Search videos or paste a YouTube link');
     input.style.cssText = 'flex:1;min-width:180px;padding:12px;border:1px solid #667080;border-radius:7px;background:#202b39;color:white;font-size:16px;';
-    const button = document.createElement('button'); button.type = 'submit'; button.textContent = 'Play video';
+    const button = document.createElement('button'); button.type = 'submit'; button.textContent = 'Search / Play';
     button.style.cssText = 'padding:12px 20px;border:0;border-radius:7px;background:#c52226;color:white;font-size:16px;cursor:pointer;';
     form.append(input, button);
-    const message = document.createElement('p'); message.setAttribute('role', 'status'); message.textContent = 'Paste a YouTube link to watch inside the game.';
+    const message = document.createElement('p'); message.setAttribute('role', 'status'); message.textContent = 'Search for a video or paste a YouTube link to watch.';
+    const setup = document.createElement('details');
+    const summary = document.createElement('summary'); summary.textContent = 'Search setup';
+    const keyInfo = document.createElement('p'); keyInfo.textContent = 'Video search uses YouTube Data API v3. Your key is sent only to Google and kept only until this page reloads.';
+    const keyInput = document.createElement('input'); keyInput.type = 'password'; keyInput.autocomplete = 'off'; keyInput.placeholder = 'YouTube Data API key'; keyInput.setAttribute('aria-label', 'YouTube Data API key'); keyInput.value = searchKey;
+    keyInput.style.cssText = input.style.cssText;
+    keyInput.addEventListener('input', () => { searchKey = keyInput.value.trim(); });
+    setup.append(summary, keyInfo, keyInput);
+    const results = document.createElement('div'); results.setAttribute('aria-label', 'Video search results'); results.style.cssText = 'display:grid;gap:8px;max-height:220px;overflow:auto;margin:12px 0;';
     const frameHost = document.createElement('div');
     const loadVideo = value => {
         const id = parseYouTubeId(value);
         if (!id) { message.textContent = 'Enter a valid YouTube video URL or 11-character video ID.'; return; }
+        searchRequest?.abort();
+        results.replaceChildren();
         tv.userData.videoId = id;
         input.value = id;
         frameHost.replaceChildren();
@@ -118,20 +141,45 @@ export function showTVApps(tv, videoId = '') {
         frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
         frame.allowFullscreen = true;
         frame.referrerPolicy = 'strict-origin-when-cross-origin';
-        frame.style.cssText = 'display:block;width:100%;aspect-ratio:16/9;min-height:200px;border:0;border-radius:8px;background:#000;';
+        frame.style.cssText = 'display:block;width:100%;height:clamp(200px,43vh,430px);border:0;border-radius:8px;background:#000;';
         frameHost.append(frame);
         message.textContent = 'Use the YouTube player controls. If a video cannot be embedded, try another video.';
         drawTVScreen(tv);
     };
-    form.addEventListener('submit', e => { e.preventDefault(); loadVideo(input.value); });
+    const searchOrPlay = async () => {
+        const value = input.value.trim();
+        if (!value) { message.textContent = 'Type a video name or paste a YouTube link.'; return; }
+        if (parseYouTubeId(value)) { loadVideo(value); return; }
+        if (/^https?:/i.test(value)) { message.textContent = 'Enter a valid YouTube video link.'; return; }
+        searchRequest?.abort();
+        const request = new AbortController(); searchRequest = request;
+        results.replaceChildren(); message.textContent = 'Searching YouTube…'; button.disabled = true;
+        try {
+            const videos = await searchYouTube(value, searchKey, request.signal);
+            if (!dialog.isConnected || request.signal.aborted) return;
+            message.textContent = videos.length ? 'Click a video to play it here.' : 'No videos found. Try another search.';
+            for (const video of videos) {
+                const result = document.createElement('button'); result.type = 'button'; result.textContent = video.title + ' — ' + video.channel;
+                result.style.cssText = 'text-align:left;padding:13px;border:1px solid #526174;border-radius:7px;background:#202b39;color:white;cursor:pointer;';
+                result.addEventListener('click', () => loadVideo(video.id)); results.append(result);
+            }
+        } catch (error) {
+            if (!request.signal.aborted && dialog.isConnected) {
+                message.textContent = error instanceof TypeError ? 'Unable to reach YouTube. Check your connection and try again.' : error.message;
+                if (!searchKey) setup.open = true;
+            }
+        } finally { if (searchRequest === request) button.disabled = false; }
+    };
+    form.addEventListener('submit', e => { e.preventDefault(); searchOrPlay(); });
     const close = document.createElement('button'); close.textContent = 'Stop & back to game';
     close.style.cssText = 'margin-top:14px;padding:12px 20px;border:0;border-radius:7px;background:#ff9900;color:#111;font-size:16px;cursor:pointer;';
     const stop = () => { closeTVPlayer(); document.getElementById('agent-input')?.focus(); };
     close.addEventListener('click', stop);
     dialog.addEventListener('cancel', e => { e.preventDefault(); stop(); });
     for (const event of ['keydown', 'keyup', 'mousedown', 'mouseup', 'click', 'touchstart', 'touchend']) dialog.addEventListener(event, e => e.stopPropagation());
-    dialog.append(title, form, frameHost, message, close); document.body.append(dialog); dialog.showModal();
-    if (videoId || tv.userData.videoId) loadVideo(videoId || tv.userData.videoId);
+    dialog.append(title, form, setup, results, frameHost, message, close); document.body.append(dialog); dialog.showModal();
+    if (initialSearch) { input.value = initialSearch; searchOrPlay(); }
+    else if (videoId || tv.userData.videoId) loadVideo(videoId || tv.userData.videoId);
 }
 
 export function buildTV({ camera, world, scene, placedFurniture, appendMessage }) {
@@ -167,8 +215,8 @@ export function controlTV(args, camera, placedFurniture, appendMessage) {
     const action = (args[1] || 'status').toLowerCase();
     const youtube = action === 'youtube' || (action === 'app' && args[2]?.toLowerCase() === 'youtube');
     const value = args.slice(action === 'app' ? 3 : 2).join(' ');
-    if (!youtube && !['on', 'off', 'home', 'apps', 'open', 'status', 'stop'].includes(action)) {
-        appendMessage('Usage: tv <on|off|home|open|status|stop> or tv youtube <video URL or ID>'); return;
+    if (!youtube && !['on', 'off', 'home', 'apps', 'open', 'status', 'stop', 'search'].includes(action)) {
+        appendMessage('Usage: tv <on|off|home|open|status|stop> or tv youtube <video URL or ID> or tv search <words>'); return;
     }
     const id = youtube && value ? parseYouTubeId(value) : '';
     if (youtube && value && !id) { appendMessage('Enter a valid YouTube video URL or 11-character video ID.'); return; }
@@ -177,8 +225,8 @@ export function controlTV(args, camera, placedFurniture, appendMessage) {
     if (!nearby.length) { appendMessage('No TV within 8 blocks. Use build tv first.'); return; }
     const tv = nearby[0];
     if (action === 'stop') { closeTVPlayer(); appendMessage('TV playback stopped.'); return; }
-    if (youtube || ['apps', 'open'].includes(action)) {
-        showTVApps(tv, id);
+    if (youtube || ['apps', 'open', 'search'].includes(action)) {
+        showTVApps(tv, id, action === 'search' ? value : '');
         appendMessage('YouTube player opened inside the game. Use Stop & back to game to return.');
     } else appendMessage(setTV(tv, action));
 }
