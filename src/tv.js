@@ -1,16 +1,20 @@
 import * as THREE from 'three';
 
 export const isTV = name => ['tv', 'television'].includes(String(name).toLowerCase());
-export const TV_APPS = [
-    { name: 'YouTube', id: 'youtube', url: 'https://www.youtube.com/', color: '#c52226' },
-    { name: 'Netflix', id: 'netflix', url: 'https://www.netflix.com/', color: '#94121b' },
-    { name: 'Prime Video', id: 'prime video', url: 'https://www.primevideo.com/', color: '#126994' },
-    { name: 'Disney+', id: 'disney+', url: 'https://www.disneyplus.com/', color: '#17387c' },
-];
-export function findTVApp(name) {
-    const normalized = name.trim().toLowerCase().replace(/\s+/g, ' ');
-    const aliases = { prime: 'prime video', 'amazon prime': 'prime video', 'amazon prime video': 'prime video', disney: 'disney+', 'disney plus': 'disney+' };
-    return TV_APPS.find(app => app.id === (aliases[normalized] || normalized));
+export function parseYouTubeId(value) {
+    const text = String(value || '').trim();
+    if (/^[A-Za-z0-9_-]{11}$/.test(text)) return text;
+    try {
+        const url = new URL(text);
+        if (url.protocol !== 'https:') return null;
+        const host = url.hostname.toLowerCase();
+        let id;
+        if (host === 'youtu.be') id = url.pathname.slice(1);
+        else if (['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(host)) {
+            id = url.pathname === '/watch' ? url.searchParams.get('v') : /^\/(embed|shorts|live)\/([^/]+)$/.exec(url.pathname)?.[2];
+        }
+        return /^[A-Za-z0-9_-]{11}$/.test(id || '') ? id : null;
+    } catch { return null; }
 }
 
 export function createTV() {
@@ -25,7 +29,7 @@ export function createTV() {
     add(0.54, 0.06, 0.34, 0, 0.03, 0);
     add(0.025, 0.025, 0.012, 0.39, 0.335, 0.087,
         new THREE.MeshBasicMaterial({ color: 0x55ff88 })).name = 'tv-led';
-    tv.userData = { itemName: 'TV', powered: true, channel: 0 };
+    tv.userData = { itemName: 'TV', powered: true, videoId: '' };
     const screenMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
     if (typeof document !== 'undefined') {
         const canvas = document.createElement('canvas');
@@ -39,14 +43,14 @@ export function createTV() {
 }
 
 export function setTV(tv, action) {
-    if (action === 'on' || action === 'home' || action === 'apps') tv.userData.powered = true;
-    if (action === 'off') tv.userData.powered = false;
-    if (action === 'channel') tv.userData.channel = (tv.userData.channel + 1) % TV_APPS.length;
-    const app = action.startsWith('app ') ? findTVApp(action.slice(4)) : null;
-    if (app) { tv.userData.channel = TV_APPS.indexOf(app); tv.userData.powered = true; }
+    if (['on', 'home', 'apps'].includes(action)) tv.userData.powered = true;
+    if (action === 'off') {
+        tv.userData.powered = false;
+        if (activeTV === tv) closeTVPlayer();
+    }
     tv.getObjectByName('tv-led').material.color.setHex(tv.userData.powered ? 0x55ff88 : 0xff4444);
     drawTVScreen(tv);
-    return `TV ${tv.userData.powered ? 'on' : 'off'} â€” selected app: ${TV_APPS[tv.userData.channel].name}.`;
+    return `TV ${tv.userData.powered ? 'on' : 'off'} — YouTube${tv.userData.videoId ? ': ' + tv.userData.videoId : ' ready'}.`;
 }
 
 function drawTVScreen(tv) {
@@ -61,53 +65,73 @@ function drawTVScreen(tv) {
         gradient.addColorStop(0, '#193b53'); gradient.addColorStop(1, '#080b11');
         ctx.fillStyle = gradient; ctx.fillRect(0, 0, 768, 432);
         ctx.fillStyle = '#ff9900'; ctx.font = 'bold 24px sans-serif'; ctx.fillText('MINE TV', 32, 43);
-        ctx.fillStyle = '#ffffff'; ctx.font = '21px sans-serif'; ctx.fillText('Home     Your apps', 420, 43);
+        ctx.fillStyle = '#ffffff'; ctx.font = '21px sans-serif'; ctx.fillText('Home     YouTube', 420, 43);
         ctx.fillStyle = '#ff9900'; ctx.fillRect(417, 53, 57, 3);
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 42px sans-serif'; ctx.fillText('All your favorites.', 32, 127);
-        ctx.font = '22px sans-serif'; ctx.fillStyle = '#c4cdd7'; ctx.fillText('Choose an app to open its official website.', 32, 166);
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 42px sans-serif'; ctx.fillText('YouTube on your TV.', 32, 127);
+        ctx.font = '22px sans-serif'; ctx.fillStyle = '#c4cdd7'; ctx.fillText('Watch videos right here in the game.', 32, 166);
         ctx.fillStyle = '#ff9900'; ctx.fillRect(32, 191, 255, 43);
-        ctx.fillStyle = '#11151c'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('Open apps: tv apps', 49, 220);
-        TV_APPS.forEach((app, i) => {
-            const x = 32 + i * 184;
-            ctx.fillStyle = app.color; ctx.fillRect(x, 269, 166, 82);
-            if (i === tv.userData.channel) { ctx.strokeStyle = '#ff9900'; ctx.lineWidth = 5; ctx.strokeRect(x, 269, 166, 82); }
-            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 22px sans-serif'; ctx.fillText(app.name, x + 15, 319);
-        });
-        ctx.fillStyle = '#aebaca'; ctx.font = '18px sans-serif'; ctx.fillText('Official services open in a new tab. Sign-in may be required.', 32, 397);
+        ctx.fillStyle = '#11151c'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('Open: tv youtube', 49, 220);
+        ctx.fillStyle = '#c52226'; ctx.fillRect(32, 269, 704, 82);
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 34px sans-serif'; ctx.fillText('▶  YouTube', 265, 323);
+        ctx.fillStyle = '#aebaca'; ctx.font = '18px sans-serif'; ctx.fillText('Use tv youtube <video URL or ID> to choose a video.', 32, 397);
     }
     texture.needsUpdate = true;
 }
 
-let appsDialog;
-export function showTVApps(tv, launchApp = null) {
+let playerDialog;
+let activeTV;
+export function closeTVPlayer() {
+    if (playerDialog) {
+        playerDialog.querySelector('iframe')?.remove();
+        playerDialog.remove();
+    }
+    playerDialog = null;
+    activeTV = null;
+}
+
+export function showTVApps(tv, videoId = '') {
+    closeTVPlayer();
     setTV(tv, 'on');
     document.exitPointerLock?.();
-    if (appsDialog) appsDialog.remove();
     const dialog = document.createElement('dialog');
-    appsDialog = dialog;
-    dialog.setAttribute('aria-label', 'TV Apps');
-    dialog.style.cssText = 'width:min(760px,90vw);box-sizing:border-box;border:1px solid #405166;border-radius:18px;background:#101924;color:white;padding:30px;font-family:Arial,sans-serif;box-shadow:0 20px 90px #000b;';
-    const title = document.createElement('h2'); title.textContent = 'TV Apps'; title.style.cssText = 'margin:0 0 12px;color:#ff9900;font-size:30px;';
-    const description = document.createElement('p'); description.textContent = 'Open the real service in a new tab. Use your account there to watch.';
-    const grid = document.createElement('div'); grid.style.cssText = 'display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:24px 0;';
-    const links = new Map();
-    for (const app of TV_APPS) {
-        const link = document.createElement('a'); link.textContent = app.name;
-        link.href = app.url; link.target = '_blank'; link.rel = 'noopener noreferrer';
-        link.style.cssText = `padding:28px 15px;background:${app.color};color:white;text-align:center;text-decoration:none;border-radius:10px;font-weight:bold;font-size:24px;border:2px solid transparent;`;
-        link.addEventListener('click', () => setTV(tv, 'app ' + app.id));
-        link.addEventListener('focus', () => link.style.borderColor = '#ff9900');
-        link.addEventListener('blur', () => link.style.borderColor = 'transparent');
-        grid.append(link); links.set(app.id, link);
-    }
-    const close = document.createElement('button'); close.textContent = 'Back to game';
-    close.style.cssText = 'padding:12px 22px;border:0;border-radius:8px;background:#ff9900;color:#111;font-weight:bold;font-size:17px;cursor:pointer;';
-    close.addEventListener('click', () => dialog.close());
-    dialog.addEventListener('close', () => { dialog.remove(); if (appsDialog === dialog) appsDialog = null; document.getElementById('agent-input')?.focus(); });
-    // Keep game hotkeys and mining controls out of the app picker.
+    playerDialog = dialog; activeTV = tv;
+    dialog.setAttribute('aria-label', 'YouTube TV player');
+    dialog.style.cssText = 'width:min(900px,94vw);max-height:94vh;box-sizing:border-box;overflow:auto;border:1px solid #405166;border-radius:18px;background:#101924;color:white;padding:24px;font-family:Arial,sans-serif;box-shadow:0 20px 90px #000b;';
+    const title = document.createElement('h2'); title.textContent = 'YouTube • TV'; title.style.cssText = 'margin:0 0 16px;color:#ff9900;';
+    const form = document.createElement('form'); form.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;';
+    const input = document.createElement('input'); input.type = 'text'; input.placeholder = 'YouTube video URL or ID'; input.setAttribute('aria-label', 'YouTube video URL or ID');
+    input.style.cssText = 'flex:1;min-width:180px;padding:12px;border:1px solid #667080;border-radius:7px;background:#202b39;color:white;font-size:16px;';
+    const button = document.createElement('button'); button.type = 'submit'; button.textContent = 'Play video';
+    button.style.cssText = 'padding:12px 20px;border:0;border-radius:7px;background:#c52226;color:white;font-size:16px;cursor:pointer;';
+    form.append(input, button);
+    const message = document.createElement('p'); message.setAttribute('role', 'status'); message.textContent = 'Paste a YouTube link to watch inside the game.';
+    const frameHost = document.createElement('div');
+    const loadVideo = value => {
+        const id = parseYouTubeId(value);
+        if (!id) { message.textContent = 'Enter a valid YouTube video URL or 11-character video ID.'; return; }
+        tv.userData.videoId = id;
+        input.value = id;
+        frameHost.replaceChildren();
+        const frame = document.createElement('iframe');
+        frame.title = 'YouTube video player';
+        frame.src = `https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&rel=0`;
+        frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+        frame.allowFullscreen = true;
+        frame.referrerPolicy = 'strict-origin-when-cross-origin';
+        frame.style.cssText = 'display:block;width:100%;aspect-ratio:16/9;min-height:200px;border:0;border-radius:8px;background:#000;';
+        frameHost.append(frame);
+        message.textContent = 'Use the YouTube player controls. If a video cannot be embedded, try another video.';
+        drawTVScreen(tv);
+    };
+    form.addEventListener('submit', e => { e.preventDefault(); loadVideo(input.value); });
+    const close = document.createElement('button'); close.textContent = 'Stop & back to game';
+    close.style.cssText = 'margin-top:14px;padding:12px 20px;border:0;border-radius:7px;background:#ff9900;color:#111;font-size:16px;cursor:pointer;';
+    const stop = () => { closeTVPlayer(); document.getElementById('agent-input')?.focus(); };
+    close.addEventListener('click', stop);
+    dialog.addEventListener('cancel', e => { e.preventDefault(); stop(); });
     for (const event of ['keydown', 'keyup', 'mousedown', 'mouseup', 'click', 'touchstart', 'touchend']) dialog.addEventListener(event, e => e.stopPropagation());
-    dialog.append(title, description, grid, close); document.body.append(dialog); dialog.showModal();
-    if (launchApp) links.get(launchApp.id).click();
+    dialog.append(title, form, frameHost, message, close); document.body.append(dialog); dialog.showModal();
+    if (videoId || tv.userData.videoId) loadVideo(videoId || tv.userData.videoId);
 }
 
 export function buildTV({ camera, world, scene, placedFurniture, appendMessage }) {
@@ -136,24 +160,25 @@ export function buildTV({ camera, world, scene, placedFurniture, appendMessage }
     tv.rotation.y = Math.atan2(camera.position.x - x, camera.position.z - z);
     scene.add(tv);
     placedFurniture.push(tv);
-    appendMessage('Built TV in front of you. ' + setTV(tv, 'status') + ' Use tv apps, tv app youtube, tv app netflix, tv app prime video, or tv app disney+.');
+    appendMessage('Built TV in front of you. ' + setTV(tv, 'status') + ' Use tv youtube <video URL or ID> to watch in the game.');
 }
 
 export function controlTV(args, camera, placedFurniture, appendMessage) {
-    const action = args.slice(1).join(' ').toLowerCase().trim() || 'status';
-    const app = action.startsWith('app ') ? findTVApp(action.slice(4)) : null;
-    if (!['on', 'off', 'channel', 'status', 'home', 'apps', 'open'].includes(action) && !app) {
-        appendMessage('Usage: tv <on|off|home|apps|channel|open|status> or tv app <youtube|netflix|prime video|disney+>');
-        return;
+    const action = (args[1] || 'status').toLowerCase();
+    const youtube = action === 'youtube' || (action === 'app' && args[2]?.toLowerCase() === 'youtube');
+    const value = args.slice(action === 'app' ? 3 : 2).join(' ');
+    if (!youtube && !['on', 'off', 'home', 'apps', 'open', 'status', 'stop'].includes(action)) {
+        appendMessage('Usage: tv <on|off|home|open|status|stop> or tv youtube <video URL or ID>'); return;
     }
+    const id = youtube && value ? parseYouTubeId(value) : '';
+    if (youtube && value && !id) { appendMessage('Enter a valid YouTube video URL or 11-character video ID.'); return; }
     const nearby = placedFurniture.filter(mesh => isTV(mesh.userData.itemName) && mesh.position.distanceTo(camera.position) <= 8);
     nearby.sort((a, b) => a.position.distanceToSquared(camera.position) - b.position.distanceToSquared(camera.position));
     if (!nearby.length) { appendMessage('No TV within 8 blocks. Use build tv first.'); return; }
     const tv = nearby[0];
-    appendMessage(setTV(tv, action));
-    if (app || action === 'apps' || action === 'open') {
-        const target = app || (action === 'open' ? TV_APPS[tv.userData.channel] : null);
-        showTVApps(tv, target);
-        if (target) appendMessage(`Requested ${target.name} in a new tab. If the browser blocks it, use its link in TV Apps.`);
-    }
+    if (action === 'stop') { closeTVPlayer(); appendMessage('TV playback stopped.'); return; }
+    if (youtube || ['apps', 'open'].includes(action)) {
+        showTVApps(tv, id);
+        appendMessage('YouTube player opened inside the game. Use Stop & back to game to return.');
+    } else appendMessage(setTV(tv, action));
 }
