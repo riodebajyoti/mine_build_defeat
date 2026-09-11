@@ -9,13 +9,15 @@ export async function loadWorldSave(worldId) {
     return {
         position: Array.isArray(save.position) ? save.position : null,
         overrides: Array.isArray(save.overrides) ? save.overrides : [],
+        televisions: Array.isArray(save.televisions) ? save.televisions : [],
     };
 }
 
-export async function saveWorld(worldId, camera, world) {
+export async function saveWorld(worldId, camera, world, keepalive = false, televisions = []) {
     const payload = {
         position: [camera.position.x, camera.position.y, camera.position.z],
         overrides: world.getSavedOverrides(),
+        televisions,
     };
     window.localStorage.setItem(storageKey(worldId), JSON.stringify(payload));
 }
