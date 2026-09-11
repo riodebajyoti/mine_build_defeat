@@ -1,3 +1,4 @@
+import { buildTV, controlTV, isTV, setTV, showTVApps } from './tv.js';
 // v1.3.0 — sofa + chair furniture update
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
@@ -368,7 +369,7 @@ function placeFurniture(point, normal, itemName) {
     mesh.userData.itemName = itemName;
     const camDir = new THREE.Vector3();
     camera.getWorldDirection(camDir);
-    mesh.rotation.y = Math.atan2(camDir.x, camDir.z);
+    mesh.rotation.y = Math.atan2(camDir.x, camDir.z) + (isTV(itemName) ? Math.PI : 0);
     mesh.position.set(bx, by - 0.5, bz);
     mesh.traverse(m => { if (m.isMesh) m.castShadow = true; });
     scene.add(mesh);
@@ -560,7 +561,9 @@ function standUp() {
 // Main interaction dispatcher — called on right-click on placed furniture
 function interactFurniture(mesh) {
     const name = (mesh.userData.itemName || '').toLowerCase();
-    if (name === 'door') {
+    if (isTV(name)) {
+        showTVApps(mesh);
+    } else if (name === 'door') {
         const isOpen = !mesh.userData.isOpen;
         mesh.userData.isOpen = isOpen;
         mesh.userData.targetYRotation = isOpen ? Math.PI / 2 : 0;
@@ -1052,10 +1055,15 @@ async function parseAgentCommand(cmdString) {
     
     switch (command) {
         case 'help':
-            appendAgentMessage("Available commands: 'give <item> [amount]', 'mode <creative|survival>', 'heal', 'start fly', 'end fly', 'weather <clear|rain|storm>', 'build house', 'build castle', 'build village', 'help'.");
+            appendAgentMessage("Available commands: 'give <item> [amount]', 'mode <creative|survival>', 'heal', 'start fly', 'end fly', 'weather <clear|rain|storm>', 'build house', 'build castle', 'build village', 'build tv', 'tv <on|off|home|open|status|stop>, tv youtube <video URL or ID>', 'help'.");
+            break;
+        case 'tv':
+            controlTV(args, camera, placedFurniture, appendAgentMessage);
             break;
         case 'build':
-            if (args.length > 1 && args[1].toLowerCase() === 'castle') {
+            if (args.length > 1 && isTV(args[1])) {
+                buildTV({ camera, world, scene, placedFurniture, appendMessage: appendAgentMessage });
+            } else if (args.length > 1 && args[1].toLowerCase() === 'castle') {
                 buildCastle({ camera, world, velocity, appendMessage: appendAgentMessage, scene, createBedMesh, placedBeds });
             } else if (args.length > 1 && args[1].toLowerCase() === 'village') {
                 buildVillage({ camera, world, velocity, appendMessage: appendAgentMessage, scene, createBedMesh, placedBeds });
@@ -1182,7 +1190,7 @@ async function parseAgentCommand(cmdString) {
 
                 appendAgentMessage("House constructed successfully! Complete with walls, stone roof, green accents, a red bed, crafting table, chest, and campfire. Welcome home, Captain!");
             } else {
-                appendAgentMessage("Usage: build <house|castle|village>");
+                appendAgentMessage("Usage: build <house|castle|village|tv>");
             }
             break;
         case 'heal':
@@ -1317,7 +1325,7 @@ async function parseAgentCommand(cmdString) {
                 const itemName = args.slice(1).join(' '); // Rejoin the rest as item name
                 
                 // Capitalize first letter of each word to try to match item names
-                const formattedName = itemName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                const formattedName = isTV(itemName) ? 'TV' : itemName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
                 
                 state.addResource(formattedName, count);
                 appendAgentMessage(`Synthesized ${count}x ${formattedName}. Check your inventory.`);
@@ -1411,7 +1419,7 @@ const ITEM_EMOJI_MAP = {
     'Bookshelf': '📚', 'Cauldron': '🪣', 'Barrel': '🪣', 'Composter': '🌿',
     'Lectern': '📖', 'Cartography Table': '🗺️', 'Loom': '🧵', 'Stonecutter': '🪨',
     'Bed': '🛏️', 'Lantern': '🏮', 'Soul Lantern': '💙', 'Campfire': '🔥',
-    'Jukebox': '🎵', 'Note Block': '🎵', 'Bell': '🔔', 'Flower Pot': '🌺',
+    'TV': '📺', 'Jukebox': '🎵', 'Note Block': '🎵', 'Bell': '🔔', 'Flower Pot': '🌺',
     // Food
     'Apple': '🍎', 'Golden Apple': '🍏', 'Enchanted Golden Apple': '⭐',
     'Bread': '🍞', 'Cooked Chicken': '🍗', 'Cooked Beef': '🥩', 'Cooked Porkchop': '🥓',
@@ -1489,6 +1497,7 @@ const MINECRAFT_ITEMS = [
     { name: 'Regeneration Potion', cat: 'potions' }, { name: 'Leaping Potion', cat: 'potions' },
     { name: 'Water Breathing Potion', cat: 'potions' }, { name: 'Luck Potion', cat: 'potions' },
     // Blocks & Furniture
+    { name: 'TV', cat: 'blocks' },
     { name: 'Oak Door', cat: 'blocks' },
     { name: 'Red Bed', cat: 'blocks' }, { name: 'Blue Bed', cat: 'blocks' },
     { name: 'White Bed', cat: 'blocks' }, { name: 'Yellow Bed', cat: 'blocks' },
