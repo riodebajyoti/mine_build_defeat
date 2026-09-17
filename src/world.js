@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { state } from './state.js';
+import {createBlockMaterials} from './block_materials.js';
+import {applyAdventureSites} from './adventure_sites.js';
 
 export class VoxelWorld {
     constructor(scene) {
@@ -13,24 +15,7 @@ export class VoxelWorld {
         this.lastChunkLoadTime = 0;
 
         // Materials
-        this.materials = {
-            'Dirt': new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.8 }),
-            'Stone': new THREE.MeshStandardMaterial({ color: 0x808080, roughness: 0.5 }),
-            'Grass': new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.8 }),
-            'Steel': new THREE.MeshStandardMaterial({ color: 0x707070, metalness: 0.8, roughness: 0.2 }),
-            'Wood': new THREE.MeshStandardMaterial({ color: 0x5C4033, roughness: 0.9 }),
-            'Leaves': new THREE.MeshStandardMaterial({ color: 0x2E8B57, roughness: 0.9 }),
-            'SnowGrass': new THREE.MeshStandardMaterial({ color: 0xF0F8FF, roughness: 0.8 }),
-            'SnowStone': new THREE.MeshStandardMaterial({ color: 0xE0E0E0, roughness: 0.5 }),
-            'Water': new THREE.MeshStandardMaterial({
-                color: 0x1E90FF,
-                transparent: true,
-                opacity: 0.75,
-                roughness: 0.1,
-                metalness: 0.1,
-                side: THREE.DoubleSide
-            }),
-        };
+        this.materials = createBlockMaterials();
 
         this.geometry = new THREE.BoxGeometry(1, 1, 1);
 
@@ -220,6 +205,7 @@ export class VoxelWorld {
                 }
             }
         }
+        applyAdventureSites(this, chunk);
         this.savedOverrides.forEach((type, key) => {
             const [x, y, z] = key.split(',').map(Number);
             if (Math.floor(x / this.chunkSize) !== cx || Math.floor(z / this.chunkSize) !== cz) return;
@@ -293,11 +279,20 @@ export class VoxelWorld {
         if (!chunk) return;
 
         // Clear existing meshes
-        Object.values(chunk.instancedMeshes).forEach(m => chunk.group.remove(m));
+        Object.values(chunk.instancedMeshes).forEach(m => {chunk.group.remove(m);m.dispose();});
         chunk.instancedMeshes = {};
 
+        const visibleBlocks = new Map();
+        chunk.blocks.forEach((type,key)=>{
+            const [x,y,z]=key.split(',').map(Number);
+            const buried=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]].every(([dx,dy,dz])=>{
+                const neighbor=chunk.blocks.get(`${x+dx},${y+dy},${z+dz}`);
+                return neighbor && neighbor!=='Water' && neighbor!=='Door';
+            });
+            if(!buried)visibleBlocks.set(key,type);
+        });
         const typeCounts = {};
-        chunk.blocks.forEach((type) => {
+        visibleBlocks.forEach((type) => {
             typeCounts[type] = (typeCounts[type] || 0) + 1;
         });
 
@@ -324,7 +319,7 @@ export class VoxelWorld {
 
             let i = 0;
             const matrix = new THREE.Matrix4();
-            chunk.blocks.forEach((val, key) => {
+            visibleBlocks.forEach((val, key) => {
                 if (val !== type) return;
                 const [x, y, z] = key.split(',').map(Number);
                 matrix.setPosition(x, y, z);

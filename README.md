@@ -60,3 +60,12 @@ Press **T** and enter `build tv` to place a TV on nearby ground, facing you.
 Guest playback needs no API key or game sign-in. Paste a video link or ID; full YouTube search is not included. YouTube videos must allow embedding. Playback stays in the game tab; no service shortcuts are used. The 3D TV opens a large in-game viewing panel when used.
 
 TV is in the Blocks & Furniture catalog; `give tv 1` adds one to inventory. Right-click a placed TV to watch; left-click to collect it. Local world saves include placed TVs, power, and the last video ID.
+
+
+## Adventure update
+
+Original pixel-textured blocks, four exploration locations, and The Lost Beacon quest. Follow the on-screen coordinates to the explorer, ruined watchtower, and crystal cavern. Press **F** or tap **Interact** nearby. Quest progress is saved separately for each world; finishing grants 12 Steel, 3 Cores, and up to 40 health. Existing block edits take precedence over generated landmarks.
+
+Willow farmstead is at X 24 / Z 0, with three farmers, sheep, pigs, and cows. Harvest carrots with F near the crop beds (X 24 / Z -3); they regrow after three active minutes. Wild animals now include all three species.
+
+The accompanying [five-hour movie](https://riodebajyoti.github.io/mine-build-defeat-movie/) visits the new locations during its daytime chapters.

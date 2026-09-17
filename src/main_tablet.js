@@ -1,3 +1,4 @@
+import {Adventure} from './adventure.js';
 import { buildTV, controlTV, isTV, setTV, showTVApps } from './tv.js';
 // v1.3.0 — sofa + chair furniture update
 import * as THREE from 'three';
@@ -147,6 +148,7 @@ const worldId = launchParams.get('worldId') || launchParams.get('world') || 'def
 
 // --- VOXEL WORLD ---
 const world = new VoxelWorld(scene);
+const adventure = new Adventure(scene, {worldId,state});
 // Generate only the spawn chunk up front; nearby terrain streams in progressively.
 world.generateChunk(0, 0);
 updateHandModel(); // Initialize hand now that we have state/world
@@ -2191,6 +2193,7 @@ function animate() {
         robotGroup.lookAt(lookTarget);
 
         world.update(delta, camera.position);
+        adventure.update(Math.min(delta,.1), camera.position);
         weather.update(delta, camera.position);
         
         // Continuous Day/Night Cycle

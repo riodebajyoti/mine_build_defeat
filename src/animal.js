@@ -2,13 +2,14 @@ import * as THREE from 'three';
 import { state } from './state.js';
 
 export class Animal {
-    constructor(scene, playerPos = new THREE.Vector3()) {
+    constructor(scene, playerPos = new THREE.Vector3(), species = ['sheep','pig','cow'][Math.floor(Math.random()*3)]) {
         this.scene = scene;
         this.group = new THREE.Group();
 
-        // Simple sheep-like animal
+        this.species=species;
+        // Block-built farm animals with distinct coats and silhouettes.
         const bodyGeo = new THREE.BoxGeometry(1.2, 0.8, 1.6);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffffff }); // White color
+        const bodyMat = new THREE.MeshStandardMaterial({ color: species==='pig'?0xe5a094:species==='cow'?0x594436:0xf0eee2 }); // White color
         const body = new THREE.Mesh(bodyGeo, bodyMat);
         body.position.y = 0.8;
         
@@ -36,6 +37,9 @@ export class Animal {
         this.animTime = 0;
 
         this.group.add(body, head, leg1, leg2, leg3, leg4);
+        if(species==='pig'){const snout=new THREE.Mesh(new THREE.BoxGeometry(.4,.24,.22),new THREE.MeshStandardMaterial({color:0xd77e79}));snout.position.set(0,1.17,1.17);this.group.add(snout);}
+        if(species==='cow')for(const x of [-.3,.3]){const horn=new THREE.Mesh(new THREE.BoxGeometry(.12,.3,.12),new THREE.MeshStandardMaterial({color:0xe7dfc1}));horn.position.set(x,1.6,.8);this.group.add(horn);const patch=new THREE.Mesh(new THREE.BoxGeometry(.02,.4,.6),new THREE.MeshStandardMaterial({color:0xf2eee2}));patch.position.set(Math.sign(x)*.605,.9,-.2);this.group.add(patch);}
+        for(const x of [-.22,.22]){const eye=new THREE.Mesh(new THREE.BoxGeometry(.08,.08,.02),new THREE.MeshBasicMaterial({color:0x151510}));eye.position.set(x,1.3,1.11);this.group.add(eye);}
         this.scene.add(this.group);
 
         // Random spawn far away relative to player
