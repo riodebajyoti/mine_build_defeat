@@ -1534,3 +1534,14 @@ body.touch-device #weather-indicator {
         margin-bottom: 14px;
     }
 }
+
+/* Matching movie palette; all gameplay controls retain their positions. */
+:root{--accent:#efce90;--glass-bg:rgba(13,31,26,.9);--glass-border:rgba(191,205,157,.32)}
+#overlay{background:linear-gradient(90deg,#071b19db,#0b1d1a99),url('./art/woodland.svg') center/cover}
+#overlay .modal{background:linear-gradient(145deg,#17382beF,#102820f5);border:1px solid #a4b77a88;border-radius:12px;box-shadow:0 25px 90px #0007;max-width:min(620px,92vw)}
+#overlay .modal-title{color:#f5e9c8;text-shadow:0 3px 18px #0004;letter-spacing:-.035em}
+#start-btn{background:#edca87;color:#1c2d20;border-color:#ffdf9b;border-radius:5px;box-shadow:0 4px 0 #77653e;text-shadow:none}
+#start-btn:hover{background:#ffdfa0;box-shadow:0 5px 22px #d8bb5d33}
+#entry-world-description{color:#d2dfcc;line-height:1.65}.entry-kicker{letter-spacing:.2em}.controls-hint{color:#b1c4b2}
+#inventory-bar{border-radius:7px;background:#10271edf;border-color:#90a66b66}
+button:focus-visible{outline:2px solid #ffe0a0;outline-offset:3px}
