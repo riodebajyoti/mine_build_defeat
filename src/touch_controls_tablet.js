@@ -1,8 +1,8 @@
 import { state } from './state.js';
 
-const touchMode = window.matchMedia('(pointer: coarse)').matches ||
-    navigator.maxTouchPoints > 0 ||
-    window.innerWidth <= 1180;
+import { shouldUseTouchControls } from './device_controls.js';
+
+const touchMode = shouldUseTouchControls();
 
 const controlsRoot = document.getElementById('mobile-controls');
 
