@@ -1467,12 +1467,6 @@ body.touch-device #weather-indicator {
     right: max(14px, env(safe-area-inset-right));
 }
 
-@media (pointer: coarse), (max-width: 1180px) {
-    #mobile-controls {
-        display: block;
-    }
-}
-
 @media (max-width: 900px), (max-height: 620px) {
     body.touch-device #stats {
         width: 165px;
