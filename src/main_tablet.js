@@ -1,3 +1,4 @@
+import { updateMusic } from './music.js';
 import {Adventure} from './adventure.js';
 import { buildTV, controlTV, isTV, setTV, showTVApps } from './tv.js';
 // v1.3.0 — sofa + chair furniture update
@@ -759,6 +760,7 @@ function updateLighting(delta) {
     // Sync worldTime state variable for game loop spawning logic
     const prevWorldTime = worldTime;
     worldTime = (currentPhase === 'NIGHT') ? 'NIGHT' : 'MORNING';
+    updateMusic(currentPhase);
 
     if (worldTime === 'NIGHT') {
         enableAnimalsSpawning = false;
