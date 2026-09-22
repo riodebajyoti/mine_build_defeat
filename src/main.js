@@ -610,6 +610,51 @@ const skyColorDay = new THREE.Color(0x87CEEB);     // Sky blue
 const skyColorSunset = new THREE.Color(0xe06030);  // Sunset Orange
 const skyColorNight = new THREE.Color(0x050510);   // Dark night sky
 
+// Ambient music inspired by the user's Chrome Music Lab songs.
+// Night: 5973273107628032; Morning/evening: 5218117260804096.
+const musicTracks = {
+    MORNING: [261.63, 329.63, 392.00, 329.63, 293.66, 349.23, 440.00, 349.23],
+    EVENING: [220.00, 277.18, 329.63, 277.18, 246.94, 311.13, 369.99, 311.13],
+    NIGHT: [130.81, 155.56, 196.00, 155.56, 146.83, 174.61, 220.00, 174.61]
+};
+let musicContext = null;
+let musicGain = null;
+let musicTimer = null;
+let musicStep = 0;
+let musicPhase = null;
+function startAmbientMusic() {
+    if (musicContext) return;
+    musicContext = new (window.AudioContext || window.webkitAudioContext)();
+    musicGain = musicContext.createGain();
+    musicGain.gain.value = 0.045;
+    musicGain.connect(musicContext.destination);
+    playAmbientStep();
+}
+function playAmbientStep() {
+    if (!musicContext || !musicGain) return;
+    const phase = musicPhase || 'MORNING';
+    const notes = musicTracks[phase];
+    const now = musicContext.currentTime;
+    const osc = musicContext.createOscillator();
+    const gain = musicContext.createGain();
+    osc.type = phase === 'NIGHT' ? 'sine' : 'triangle';
+    osc.frequency.value = notes[musicStep % notes.length];
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.8, now + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.62);
+    osc.connect(gain).connect(musicGain);
+    osc.start(now); osc.stop(now + 0.66);
+    musicStep = (musicStep + 1) % notes.length;
+    clearTimeout(musicTimer);
+    musicTimer = setTimeout(playAmbientStep, 680);
+}
+function setAmbientMusicPhase(phase) {
+    const next = phase === 'NIGHT' ? 'NIGHT' : (phase === 'SUNSET' ? 'EVENING' : 'MORNING');
+    if (musicPhase !== next) { musicPhase = next; musicStep = 0; }
+}
+window.addEventListener('pointerdown', startAmbientMusic, { once: true });
+window.addEventListener('keydown', startAmbientMusic, { once: true });
+
 function initGameRules(mode) {
     timeOfDay = 0.2;
     gravityEnabled = true;
@@ -710,6 +755,7 @@ function updateLighting(delta) {
     // Sync worldTime state variable for game loop spawning logic
     const prevWorldTime = worldTime;
     worldTime = (currentPhase === 'NIGHT') ? 'NIGHT' : 'MORNING';
+    setAmbientMusicPhase(currentPhase);
 
     if (worldTime === 'NIGHT') {
         enableAnimalsSpawning = false;
